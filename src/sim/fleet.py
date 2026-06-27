@@ -1,0 +1,84 @@
+"""Synthetic mixed fleet (UAVs + ground vehicles) with telemetry and attack labels.
+
+CybORG DroneSwarm has no GPS/RF physics, so positions, comms SNR and the
+jamming / GPS-spoofing attacks live here as ground-truth-labelled signals.
+The firmware/worm attack is realised by the sim, not here.
+
+All arrays have shape (steps, n) or (steps, n, 2) and align with sim step t.
+"""
+import numpy as np
+
+
+def generate_fleet(n_uav=12, n_ugv=6, steps=40, seed=0, grid=100.0,
+                   attacks=None, max_link=40.0):
+    rng = np.random.default_rng(seed)
+    n = n_uav + n_ugv
+    types = ["uav"] * n_uav + ["ugv"] * n_ugv
+
+    pos = np.zeros((steps, n, 2))
+    pos[0, :n_uav] = rng.uniform(10, grid - 10, size=(n_uav, 2))
+    pos[0, n_uav:, 0] = rng.uniform(5, grid - 5, size=n_ugv)
+    pos[0, n_uav:, 1] = grid * 0.45 + rng.normal(0, 2.0, size=n_ugv)
+
+    vel = np.zeros((n, 2))
+    vel[:n_uav] = rng.uniform(-4, 4, size=(n_uav, 2))      # UAVs roam freely
+    vel[n_uav:, 0] = rng.uniform(-1.5, 1.5, size=n_ugv)    # UGVs crawl along a road
+    road_y = pos[0, n_uav:, 1].copy()
+
+    for t in range(1, steps):
+        step = pos[t - 1] + vel
+        vel[step[:, 0] < 0, 0] *= -1
+        vel[step[:, 0] > grid, 0] *= -1
+        vel[step[:, 1] < 0, 1] *= -1
+        vel[step[:, 1] > grid, 1] *= -1
+        pos[t] = np.clip(pos[t - 1] + vel, 0, grid)
+        vel[:n_uav] = np.clip(vel[:n_uav] + rng.normal(0, 0.6, (n_uav, 2)), -5, 5)
+        pos[t, n_uav:, 1] = road_y + rng.normal(0, 0.8, size=n_ugv)   # keep UGVs on lane
+
+    snr = 20.0 + rng.normal(0, 1.5, size=(steps, n))
+    pos_rep = pos.copy()
+    label_jam = np.zeros((steps, n), bool)
+    label_gps = np.zeros((steps, n), bool)
+
+    for atk in attacks or []:
+        tgt = list(atk["targets"])
+        t0, t1 = max(0, atk["t"][0]), min(steps - 1, atk["t"][1])
+        if atk["type"] == "jam":
+            snr[t0:t1 + 1][:, tgt] -= atk.get("drop", 22.0)
+            label_jam[t0:t1 + 1][:, tgt] = True
+        elif atk["type"] == "gps_spoof":
+            drift = atk.get("drift", 3.0)
+            for k, t in enumerate(range(t0, t1 + 1)):       # reported position drifts away
+                pos_rep[t][tgt] = pos[t][tgt] + drift * (k + 1)
+            label_gps[t0:t1 + 1][:, tgt] = True
+
+    return {
+        "types": types, "n": n, "n_uav": n_uav, "steps": steps, "grid": grid,
+        "pos_true": pos, "pos_rep": pos_rep, "snr": snr,
+        "link_up": (snr > 6.0).astype(np.int8),
+        "gps_err": np.linalg.norm(pos_rep - pos, axis=2),
+        "label_jam": label_jam, "label_gps": label_gps,
+    }
+
+
+def starting_positions(fleet):
+    """Initial positions for DroneSwarmScenarioGenerator(starting_positions=...)."""
+    g = fleet["grid"]
+    return [np.array([int(np.clip(x, 0, g - 1)), int(np.clip(y, 0, g - 1))])
+            for x, y in fleet["pos_true"][0]]
+
+
+def truncate(fleet, t):
+    """Cut all arrays to t steps (used when an episode ends early)."""
+    for k in ("pos_true", "pos_rep", "snr", "link_up", "gps_err", "label_jam", "label_gps"):
+        fleet[k] = fleet[k][:t]
+    fleet["steps"] = t
+    return fleet
+
+
+if __name__ == "__main__":
+    f = generate_fleet(attacks=[{"type": "jam", "targets": [0, 1], "t": [10, 25]},
+                                {"type": "gps_spoof", "targets": [12], "t": [15, 35]}])
+    print(f"{f['n']} entities ({f['n_uav']} uav), {f['steps']} steps")
+    print(f"max gps_err {f['gps_err'].max():.1f}, min snr {f['snr'].min():.1f}, "
+          f"jam {f['label_jam'].sum()} gps {f['label_gps'].sum()} entity-steps")

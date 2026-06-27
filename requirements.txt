@@ -1,0 +1,16 @@
+# Python 3.11. CybORG (CAGE Challenge 3 / DroneSwarm, v3.1) is installed separately
+# from source - see README. numpy is pinned to 1.23.5 because CC3 uses the removed
+# np.int alias; the other pins are the versions CC3 was built against.
+numpy==1.23.5
+gym==0.23.1
+pettingzoo==1.22.3
+networkx
+matplotlib==3.7.5
+pyyaml
+prettytable
+docutils
+paramiko
+pygame==2.5.2
+pillow            # animated-GIF export in src/render.py (also a matplotlib dependency)
+# optional — only needed for the real-LLM agent type; the offline stub is used if absent:
+# anthropic

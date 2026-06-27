@@ -1,0 +1,25 @@
+# 공격(3) x 방어(3) 비교 스윕. red_types x blue_types 의 모든 조합을 같은 sim에서 실행.
+# entity index: 0-11 = UAV, 12-17 = UGV
+name: sweep
+env: B
+fleet: {n_uav: 12, n_ugv: 6, grid: 100, max_link: 40}
+steps: 40
+seeds: [0, 1, 2]
+
+red_types:  [rule, llm, rl]      # 공격 에이전트 타입 (brains.RED_BRAINS)
+blue_types: [rule, llm, rl]      # 방어 에이전트 타입 (brains.blue_decide)
+
+sim:                              # DroneSwarm 네트워크 시뮬 설정 (red_class는 red_types로 대체됨)
+  starting_num_red: 3
+  red_spawn_rate: 0.20
+  max_length_data_links: 40
+
+defense:                         # 합성 텔레메트리 방어(패시브) — 탐지 F1 / GPS 보정 점수화
+  detector: multisensor          # none|threshold|multisensor
+  snr_thresh: 6
+  gps_thresh: 8
+  response: safe_mode            # none|safe_mode|isolate
+
+attacks:                         # 합성 오버레이 공격(재밍/GPS, ground-truth 라벨)
+  - {type: jam,       targets: [0, 1, 2, 3], t: [10, 25], drop: 22}
+  - {type: gps_spoof, targets: [12, 13],     t: [15, 35], drift: 3.0}

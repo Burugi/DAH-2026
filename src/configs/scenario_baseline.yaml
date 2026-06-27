@@ -1,0 +1,9 @@
+# 대조군: 합성 공격 없음(웜만), blue=random. 다른 시나리오와 sim-side 비교 기준.
+name: baseline
+env: B
+fleet: {n_uav: 12, n_ugv: 6, grid: 100, max_link: 40}
+steps: 40
+seeds: [0, 1, 2]
+sim: {red_class: RedDroneWorm, starting_num_red: 1, red_spawn_rate: 0.05, max_length_data_links: 40}
+blue: {policy: random}
+attacks: []
