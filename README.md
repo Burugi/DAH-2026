@@ -1,162 +1,151 @@
-# DroneSwarm red/blue lab — 3×3 agent comparison
+# DroneSwarm Red/Blue Lab — 3×3 Agent Comparison
 
-A small experiment harness on top of **CybORG DroneSwarm (CAGE Challenge 3)** that
-compares **3 attacker types × 3 defender types** on the same simulator:
+A small, local experiment harness that pits **cyber attackers (red) against defenders
+(blue)** over a swarm of drones, and answers one question: **which kind of agent wins?**
 
-|  | `rule` | `llm` | `rl` |
-| --- | --- | --- | --- |
-| meaning | hand-written heuristic / FSM | LLM picks from a MITRE menu | frozen tabular Q-policy |
-| baseline note | the CAGE-4 report's strong baseline | offline stub by default, Claude if a key is set | trained & cached by `agents/rl.py` |
+---
 
-A synthetic fleet of UAVs + ground vehicles drives the network sim, covering **comms
-jamming, GPS spoofing and firmware-worm propagation**. Every (attack × defense)
-matchup is logged, scored and visualised, and summarised in a 3×3 grid. See
-[docs/architecture.md](docs/architecture.md) for the design and
-[docs/demo.md](docs/demo.md) for the per-step animation.
+## Overview
 
-## Folder structure
+The lab runs on **CybORG DroneSwarm (CAGE Challenge 3)** with a synthetic fleet of
+**12 UAVs + 6 UGVs** moving on a 2D map. Both the attacker and the defender are built in
+**three "agent" styles**, and we play every attacker against every defender, giving a
+**3×3 grid of 9 matchups**:
+
+| style | how it decides | one line |
+| --- | --- | --- |
+| `rule` | hand-written heuristic | fast, interpretable, the CAGE-winning recipe |
+| `llm` | a language model picks from a menu | offline stub by default, Claude if a key is set |
+| `rl` | a learned tabular Q-policy | trained once, then frozen |
+
+Every action is tagged with a **MITRE** technique (ATT&CK for attack, D3FEND for defense),
+so the experiment maps onto real-world threats and mitigations.
+
+**Headline result:** the rule-based style is strongest, and it is clearest on **defense**.
+Rule-based defense keeps the fleet safest against every attacker (see the grid below).
+This matches the CAGE Challenge 4 finding that heuristics beat learned agents.
 
 ```
 lab/
-├─ README.md
-├─ requirements.txt          # pinned deps (CybORG installed separately, see below)
-├─ src/
-│  ├─ sweep.py               # the full 3×3 sweep (main entry point)
-│  ├─ run.py                 # one matchup (red_type vs blue_type)
-│  ├─ analyze.py             # aggregate all runs -> results/summary.csv
-│  ├─ make_dataset.py        # bulk synthetic dataset (no sim)
-│  ├─ agents/                # the agent intelligence
-│  │  ├─ actions.py          #   MITRE-tagged action catalog (single source of truth)
-│  │  ├─ brains.py           #   rule/llm/rl agents for red and blue
-│  │  ├─ llm.py              #   offline stub + optional Claude backend
-│  │  └─ rl.py               #   tabular Q-learning (train + cache)
-│  ├─ sim/                   # environment
-│  │  ├─ fleet.py            #   synthetic UAV+UGV telemetry + attacks
-│  │  └─ defense.py          #   telemetry detector + response (scored)
-│  ├─ viz/                   # visualisation
-│  │  ├─ plot.py             #   static figures
-│  │  └─ render.py           #   per-step pygame animation / GIF
-│  └─ configs/*.yaml         # sweep.yaml + legacy scenario presets
-├─ docs/                     # architecture diagram, demo notes, example_animation.gif
-├─ results/                  # generated (gitignored): per-matchup runs + grids
-└─ data/                     # generated (gitignored): bulk synthetic datasets
+├─ README.md          ├─ requirements.txt
+├─ src/               # all code
+│  ├─ sweep.py run.py analyze.py make_dataset.py
+│  ├─ agents/  actions.py brains.py llm.py rl.py
+│  ├─ sim/     fleet.py defense.py
+│  ├─ viz/     plot.py render.py
+│  └─ configs/*.yaml
+├─ docs/              # report, architecture, demo GIFs
+└─ results/  data/    # generated output (not in git)
 ```
 
-## Install
+---
+
+## Quick Start
 
 Python 3.11, CPU only.
 
 ```bash
-python -m venv venv
-venv\Scripts\activate                       # Windows (Linux/mac: source venv/bin/activate)
-
-# 1) CybORG CC3 (not on PyPI)
+# 1) install CybORG CC3 (not on PyPI) + pinned deps
 git clone https://github.com/cage-challenge/CybORG
-pip install -e ./CybORG --no-deps           # --no-deps so it doesn't pull numpy 2.x
-
-# 2) pinned dependencies
+pip install -e ./CybORG --no-deps
 pip install -r requirements.txt
+
+# 2) run the full 3x3 comparison  (trains the rl policy on first run, ~1 min)
+python src/sweep.py src/configs/sweep.yaml            # -> results/sweep_*/
+python src/analyze.py                                 # summary table of all runs
+
+# one matchup at a time (red/blue each in {rule, llm, rl})
+python src/run.py src/configs/sweep.yaml --red rule --blue rl
+python src/viz/render.py <run_id>                     # live viewer; add --gif to save an animation
 ```
 
-### Environment variables
+Optional environment variables: set `ANTHROPIC_API_KEY` to make the `llm` agent call
+Claude (otherwise a deterministic offline stub is used, so everything runs with no
+network); `SDL_VIDEODRIVER=dummy` runs the viewer headless for GIF export.
 
-| var | effect |
-| --- | --- |
-| `ANTHROPIC_API_KEY` | if set, the `llm` agent type calls Claude (`claude-haiku-4-5`); otherwise a deterministic offline stub is used so everything runs with no network |
-| `LAB_LLM_MODEL` | override the Claude model id (default `claude-haiku-4-5-20251001`) |
-| `SDL_VIDEODRIVER=dummy` | run pygame headless (auto-set by `sweep.py` for GIF export) |
+---
 
-## Run
+## Experiment Settings
 
-```bash
-# full attack(3) × defense(3) comparison  -> results/sweep_*/
-python src/agents/rl.py train src/configs/sweep.yaml --episodes 200   # train+cache rl (auto if missing)
-python src/sweep.py src/configs/sweep.yaml                            # 9 matchups + grids + per-matchup GIFs
-python src/sweep.py src/configs/sweep.yaml --seeds 1 --steps 20 --episodes 20 --fresh   # quick smoke
-python src/sweep.py src/configs/sweep.yaml --no-gif                   # skip GIF export (faster)
+**Environment.** 18 entities (12 UAV + 6 UGV) on a 100×100 grid. The simulator has two
+channels that share one fleet: the CybORG network channel produces who is **compromised**
+and the reward, and a synthetic telemetry channel produces position, signal quality,
+**jamming** and **GPS spoofing** with ground-truth labels.
 
-# one matchup (red/blue each in {rule, llm, rl})
-python src/run.py src/configs/sweep.yaml --red rule --blue rl         # -> results/<run_id>/
-python src/viz/plot.py <run_id>                                       # static figures
-python src/viz/render.py <run_id>                                     # live pygame view  (--gif / --smoke)
+**Action pools.** Both sides choose, each step, from a fixed menu of MITRE-tagged actions
+(full list in `src/agents/actions.py`):
 
-python src/analyze.py                                                 # aggregate all runs -> results/summary.csv
-```
+- **Attack (red), ~11:** discover, exploit (nearest / random / farthest), seize, spread
+  worm, jam, block comms, persist.
+- **Defense (blue), ~13:** monitor, analyse, remove sessions, retake, block, allow,
+  deploy decoy, plus passive detectors for jamming / GPS / worm and a safe-mode position fix.
 
-## Scenario config
+**Evaluation.** Each of the 9 matchups is run for **5 random seeds × 40 steps**, then
+averaged. We track attack metrics (final compromised fraction, time to first compromise,
+spread over time, drones recovered) and defense metrics (cumulative blue reward, worm
+detection F1, jamming/GPS detection F1, GPS error before vs after correction). Reading the
+3×3 grid is simple: scan a **column** to see how one defender does against all attackers
+(a strong defender keeps the whole column low), and scan a **row** to see how one attacker
+does against all defenders.
 
-```yaml
-name: sweep
-fleet: {n_uav: 12, n_ugv: 6, grid: 100, max_link: 40}
-steps: 40
-seeds: [0, 1, 2]
-red_types:  [rule, llm, rl]      # agent types swept by sweep.py
-blue_types: [rule, llm, rl]
-sim:   {starting_num_red: 3, red_spawn_rate: 0.20, max_length_data_links: 40}
-defense: {detector: multisensor, snr_thresh: 6, gps_thresh: 8, response: safe_mode}
-attacks:
-  - {type: jam,        targets: [0, 1, 2, 3], t: [10, 25], drop: 22}   # ids 0..n_uav-1 = UAV
-  - {type: gps_spoof,  targets: [12, 13],     t: [15, 35], drift: 3.0} #     n_uav.. = UGV
-```
+---
 
-| field | options |
-| --- | --- |
-| `red_types` / `blue_types` | any of `rule`, `llm`, `rl` |
-| `defense.detector` | `none`, `threshold` (jam only), `multisensor` (also GPS); both also run the Canary worm detector |
-| `defense.response` | `none`, `safe_mode` (correct spoofed position), `isolate` |
-| `defense.canary_recall` / `canary_fp` | Canary worm-detector sensitivity (default `0.8` / `0.03`) |
-| `attacks[].type` | `jam`, `gps_spoof` |
+## Sample Visualization
 
-`sweep.py` reads `red_types`/`blue_types`; single `run.py` takes `--red`/`--blue`.
-Presets in `src/configs/`: `sweep` + legacy `baseline`, `combined`, `passive_blue`,
-`defended`, `fsm_red` (run via `python src/run.py src/configs/<name>.yaml --red rule --blue rule`).
+The viewer draws the fleet step by step. The colours and shapes mean:
 
-## Action catalog (MITRE-tagged)
+- **Fill colour = team.** Blue is a friendly (defended) drone, red is a compromised drone.
+- **Shape = platform.** Triangle is a UAV, square is a UGV.
+- **Purple ring = jammed.** **Orange arrow = GPS spoofed** (points from the real position to
+  the faked one). **Yellow ring = the defender detected something** on that drone.
 
-All agent types choose from one catalog (`src/agents/actions.py`), grounded in real
-DroneSwarm primitives + the synthetic `sim/defense.py` layer:
+**A strong attack vs a weak defense (`rule` attacker, `rl` defender).** The fleet turns red
+as the worm spreads and the defender fails to keep up.
 
-- **Red (~11, MITRE ATT&CK):** Sleep, DiscoverDrones (T1018), Exploit
-  Nearest/Random/Farthest (T1210), SeizeControl (T1078), SpreadWorm (T1021),
-  Jam Nearest/Farthest (T1498/T1499), BlockComms (T1565), Persist (T1542 firmware).
-- **Blue (~13, MITRE D3FEND):** Sleep, Monitor, Analyse, RemoveSessions,
-  Retake Suspicious/Random, BlockSuspicious, AllowTraffic, DeployDecoy (deception,
-  CC2-winning tactic) — chosen per step — plus DetectJam, DetectGPS, SafeMode,
-  Isolate (passive telemetry defences set via the `defense` block, scored by
-  `sim/defense.py`, which also runs the **Canary** worm/compromise detector → `comp_F1`).
+![rule attacker vs rl defender](docs/gifs/matchup_rule_vs_rl.gif)
 
-## Outputs
+**A rule-based defense holding (`rule` vs `rule`).** Drones that turn red are retaken and go
+back to blue, so the fleet stays mostly defended.
 
-Per matchup `results/sweep_*/<red>_vs_<blue>/`: `log.csv`, `arrays.npz`, `meta.json`,
-and `figs/` (`g_compromise_curve`, `a_reward`, `animation.gif`, `b_compromise`,
-`c_snr_jam`, `d_gps_spoof`, `e_fleet_map`, `f_defense`). Top-level `results/sweep_*/`
-adds `summary.csv`, `grid_heatmaps.png`, `grid_curves.png`.
+![rule attacker vs rule defender](docs/gifs/matchup_rule_vs_rule.gif)
 
-**Quantitative metrics** (mean over seeds, in `meta.json`/`summary.csv`):
-attack = `final_compromise`, `peak_compromise`, `time_to_first_compromise`,
-`compromise_auc`, `recovered`; defense = `blue_reward_total`, `comp_F1` (Canary
-worm detection), `jam_F1`, `gps_F1`, `gps_err_before→after`.
+**One attack action in isolation (SeizeControl).** The attacker takes over a drone and the
+red footprint grows. We verified every action this way.
 
-## Extending
+![red SeizeControl](docs/gifs/action_red_SeizeControl.gif)
 
-- **New red attacker / blue manoeuvre** — add a catalog entry in `src/agents/actions.py`
-  and a branch in `src/agents/brains.py` (the `_Red` subclasses / `blue_decide`).
-- **New detector / response** — extend `run_defense()` (`src/sim/defense.py`); it's
-  scored against ground-truth labels automatically.
-- **New attack type** — add a branch in `generate_fleet()` (`src/sim/fleet.py`) + a label array.
-- **New scenario** — copy a YAML in `src/configs/`.
+**One defense action in isolation (RetakeSuspicious).** The defender keeps retaking
+compromised drones, driving the compromised count to zero.
 
-## Datasets
+![blue RetakeSuspicious](docs/gifs/action_blue_RetakeSuspicious.gif)
 
-For offline detector work, dump a labelled synthetic dataset (no sim, so many seeds):
+**The 3×3 result at a glance.** Left is the final compromised fraction (lower is better for
+the defender), middle is blue reward, right is worm-detection F1.
 
-```bash
-python src/make_dataset.py src/configs/combined.yaml --seeds 200   # -> data/combined.csv
-```
+![3x3 grid](docs/gifs/grid_heatmaps.png)
 
-## Limitations
+Final compromised fraction, averaged over 5 seeds (lower is better for the defender):
 
-Jamming and GPS spoofing are geometric/signal abstractions, not RF or navigation
-physics — only the firmware worm is real CybORG network dynamics. The jam/GPS
-detection F1 is therefore config-driven and constant across agent types by design; the
-agent comparison happens on the sim network channel.
+| attacker \ defender | rule | llm | rl |
+| --- | --- | --- | --- |
+| **rule** | 0.36 | 0.57 | 0.86 |
+| **llm** | 0.22 | 0.47 | 0.57 |
+| **rl** | 0.23 | 0.39 | 0.81 |
+
+The `rule` defender column is the lowest everywhere, so it is the strongest defense. A GIF
+for **every** matchup and **every** action, plus per-matchup figures, is regenerated under
+`results/` by the commands above (`results/` is not committed to keep the repo light).
+
+---
+
+## More
+
+- **Architecture and design:** `docs/architecture.md`
+- **Visualisation details and all commands:** `docs/demo.md`
+- **Full write-up (report):** `docs/report.md`
+- **Extend it:** add an action in `src/agents/actions.py` and a branch in
+  `src/agents/brains.py`; add a detector in `src/sim/defense.py`; add a scenario YAML in
+  `src/configs/`.
+- **Limitation:** jamming and GPS spoofing are signal/geometry abstractions, not RF or
+  navigation physics, so their detection scores depend on the scenario settings. The agent
+  comparison itself happens on the real CybORG network channel.
