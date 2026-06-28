@@ -17,8 +17,10 @@ RESULTS = os.path.join(ROOT, "results")
 sys.path.insert(0, SRC)
 from sim.fleet import generate_fleet, starting_positions, truncate
 from sim.defense import run_defense
-from agents.actions import make_blue_index
+from agents.actions import make_blue_index, RED_N, BLUE_DECISION_N, RED_CATALOG, BLUE_CATALOG
+from agents import brains
 from agents.brains import RED_BRAINS, blue_decide, use_rl
+from viz import score
 
 from CybORG import CybORG, CYBORG_VERSION
 from CybORG.Simulator.Scenarios.DroneSwarmScenarioGenerator import DroneSwarmScenarioGenerator
@@ -121,6 +123,13 @@ def _worm_step(t, cfg, cyborg, ip_to_drone, owned, rng):
             pass   # worm spread is best-effort; never crash the rollout
 
 
+def _summ(aids, k):
+    """(rep_action_id, count_vector[k]) for the action ids chosen this step."""
+    cnt = np.bincount([a for a in aids if 0 <= a < k], minlength=k).astype(np.int16)
+    rep = int(cnt.argmax()) if cnt.sum() else 0
+    return rep, cnt
+
+
 def rollout(cfg, seed, red_type="rule", blue_type="rule"):
     """One evaluation episode. RL policies must be installed via use_rl() first."""
     fleet, cyborg, env, ip_to_drone = build_env(cfg, seed, RED_BRAINS[red_type])
@@ -129,6 +138,8 @@ def rollout(cfg, seed, red_type="rule", blue_type="rule"):
     rng_worm = np.random.default_rng(seed + 42)
     reward = np.zeros(cfg["steps"])
     red_owned = np.zeros((cfg["steps"], n), np.int8)
+    red_log, blue_log = [], []           # per-step (rep_id, count_vector) for the dashboard
+    brains.pop_red_actlog()              # clear any leftovers from env.reset()
 
     # ── Pre-compromise: insider / side-channel / leader-takeover (A12/A15/A17) ──
     scenario = cfg.get("_scenario") or {}
@@ -159,9 +170,11 @@ def rollout(cfg, seed, red_type="rule", blue_type="rule"):
 
         ctx = {"compromised": owned, "ip_to_drone": ip_to_drone, "n": n}
         live = [a for a in env.active_agents if a in env.agent_actions]
-        acts = {a: make_blue_index(blue_decide(blue_type, env, a, ctx), env, a, ctx)
-                for a in live}
+        blue_aids = [blue_decide(blue_type, env, a, ctx) for a in live]
+        acts = {a: make_blue_index(aid, env, a, ctx) for a, aid in zip(live, blue_aids)}
         _, rew, done, _ = env.step(acts)
+        blue_log.append(_summ(blue_aids, BLUE_DECISION_N))
+        red_log.append(_summ(brains.pop_red_actlog(), RED_N))
         reward[t] = float(np.mean(list(rew.values()))) if rew else 0.0
         for d in compromised_drones(cyborg, n):
             red_owned[t, d] = 1
@@ -169,7 +182,15 @@ def rollout(cfg, seed, red_type="rule", blue_type="rule"):
             reward, red_owned = reward[:t + 1], red_owned[:t + 1]
             truncate(fleet, t + 1)
             break
+    T = len(reward)
+    a_t, d_t = score.per_step(red_owned, fleet["link_up"][:T])
     defence = run_defense(cfg, fleet, seed, red_owned)
+    defence.update(
+        red_act=np.array([r[0] for r in red_log], np.int16),
+        blue_act=np.array([b[0] for b in blue_log], np.int16),
+        red_cnt=np.stack([r[1] for r in red_log]) if red_log else np.zeros((T, RED_N), np.int16),
+        blue_cnt=np.stack([b[1] for b in blue_log]) if blue_log else np.zeros((T, BLUE_DECISION_N), np.int16),
+        a_t=a_t, d_t=d_t)
     return fleet, reward, red_owned, defence
 
 
@@ -212,6 +233,11 @@ def save_run(cfg, out, red_type, blue_type, results):
         seed_arrays = {"reward": reward, "red_owned": red_owned, "gps_corr": df["gps_corr"],
                        "det_jam": df["det_jam"], "det_gps": df["det_gps"], "det_comp": df["det_comp"],
                        "isolated": df["isolated"],
+                       "red_act": df.get("red_act", np.zeros(T, np.int16)),
+                       "blue_act": df.get("blue_act", np.zeros(T, np.int16)),
+                       "red_cnt": df.get("red_cnt", np.zeros((T, RED_N), np.int16)),
+                       "blue_cnt": df.get("blue_cnt", np.zeros((T, BLUE_DECISION_N), np.int16)),
+                       "a_t": df.get("a_t", np.zeros(T)), "d_t": df.get("d_t", np.zeros(T)),
                        **{k: fleet[k] for k in ("snr", "gps_err", "link_up", "label_jam",
                                                 "label_gps", "pos_true", "pos_rep")}}
         for k, v in seed_arrays.items():
@@ -237,10 +263,13 @@ def save_run(cfg, out, red_type, blue_type, results):
     std = lambda key: round(float(np.std([e[key] for e in emetrics])), 3)
     metrics = {k: avg(k) for k in emetrics[0]}
     metrics_std = {k: std(k) for k in emetrics[0]}
+    metrics.update(score.episode_scores(metrics, npz["red_owned"], npz["link_up"], int(Tmin)))
     json.dump({"run_id": run_id, "cyborg": CYBORG_VERSION, "config": cfg,
                "red_type": red_type, "blue_type": blue_type,
                "n_entities": n, "types": types, "seeds": list(results),
                "steps_used": int(Tmin),
+               "red_action_names": [c[0] for c in RED_CATALOG],
+               "blue_action_names": [c[0] for c in BLUE_CATALOG[:BLUE_DECISION_N]],
                "defense": {"detector": dfn.get("detector", "none"),
                            "response": dfn.get("response", "none"),
                            "comp_F1":       metrics["comp_F1"],

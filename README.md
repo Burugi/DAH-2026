@@ -30,11 +30,12 @@ lab/
 ├─ README.md          ├─ requirements.txt
 ├─ src/               # all code
 │  ├─ sweep.py run.py analyze.py make_dataset.py
-│  ├─ agents/  actions.py brains.py llm.py rl.py
-│  ├─ sim/     fleet.py defense.py
-│  ├─ viz/     plot.py render.py
+│  ├─ agents/    actions.py brains.py llm.py rl.py
+│  ├─ sim/       fleet.py defense.py
+│  ├─ viz/       plot.py render.py dashboard.py score.py
+│  ├─ scenarios/ A01..A21 MITRE attack scenarios + loader
 │  └─ configs/*.yaml
-├─ docs/              # report, architecture, demo GIFs
+├─ docs/              # report, architecture, demo GIFs, sample_run/
 └─ results/  data/    # generated output (not in git)
 ```
 
@@ -63,6 +64,19 @@ Optional environment variables: set `ANTHROPIC_API_KEY` to make the `llm` agent 
 Claude (otherwise a deterministic offline stub is used, so everything runs with no
 network); `SDL_VIDEODRIVER=dummy` runs the viewer headless for GIF export.
 
+### Quick test (no CybORG, no full run)
+
+A tiny sample result is committed under `docs/sample_run/`, so you can see the outputs
+without installing CybORG or running the simulator. These commands need only
+numpy / matplotlib / pillow:
+
+```bash
+python src/viz/dashboard.py docs/sample_run   # -> docs/sample_run/dashboard.html (open in a browser)
+python src/viz/plot.py docs/sample_run        # -> docs/sample_run/figs/*.png
+```
+
+(`docs/sample_run/dashboard.html` is also committed, so you can just open it directly.)
+
 ---
 
 ## Experiment Settings
@@ -75,18 +89,39 @@ and the reward, and a synthetic telemetry channel produces position, signal qual
 **Action pools.** Both sides choose, each step, from a fixed menu of MITRE-tagged actions
 (full list in `src/agents/actions.py`):
 
-- **Attack (red), ~11:** discover, exploit (nearest / random / farthest), seize, spread
-  worm, jam, block comms, persist.
+- **Attack (red), ~14:** discover, exploit (nearest / random / farthest), seize, spread
+  worm, jam, block comms, persist, target-leader, exploit-known, flood-all.
 - **Defense (blue), ~13:** monitor, analyse, remove sessions, retake, block, allow,
   deploy decoy, plus passive detectors for jamming / GPS / worm and a safe-mode position fix.
 
+**Scenarios.** Beyond the default mix, 21 MITRE attack scenarios (A01–A21: firmware worm,
+GPS spoofing, RF jamming, SATCOM replay, sensor spoofing, multi-domain, and so on) live in
+`src/scenarios/`. Run any subset with `python src/sweep.py src/configs/sweep.yaml
+--scenarios A1,A7` (or `sim`, or `all`).
+
 **Evaluation.** Each of the 9 matchups is run for **5 random seeds × 40 steps**, then
 averaged. We track attack metrics (final compromised fraction, time to first compromise,
-spread over time, drones recovered) and defense metrics (cumulative blue reward, worm
-detection F1, jamming/GPS detection F1, GPS error before vs after correction). Reading the
-3×3 grid is simple: scan a **column** to see how one defender does against all attackers
-(a strong defender keeps the whole column low), and scan a **row** to see how one attacker
-does against all defenders.
+spread over time, drones recovered) and defense metrics (cumulative blue reward, worm/
+jamming/GPS detection F1, GPS error correction, availability). These roll up into a single
+**composite score per side** in `[0,1]` (see Sample Visualization). Reading the 3×3 grid is
+simple: scan a **column** to see how one defender does against all attackers, and a **row**
+to see how one attacker does against all defenders.
+
+## Agent designs
+
+Both red and blue come in the same three styles; only the decision rule differs.
+
+- **rule (heuristic).** Red: if the last exploit landed, seize that drone, otherwise exploit
+  a nearby one (sometimes jam or persist). Blue: if my own drone is compromised, remove the
+  intruder; else if any drone is compromised, retake it; else monitor.
+- **llm (menu choice).** The current situation and the action menu become a text prompt and a
+  language model picks one action. With no API key a deterministic offline stub runs an
+  autonomous kill-chain (discover → exploit → seize → spread).
+- **rl (learned).** A small tabular Q-policy trained by Monte-Carlo (RL-red vs rule-blue and
+  RL-blue vs rule-red), then frozen and used greedily.
+
+Every drone agent acts each step, so many actions happen at once; the dashboard's tactic log
+shows each side's most-common action that step plus the counts.
 
 ---
 
@@ -119,22 +154,31 @@ compromised drones, driving the compromised count to zero.
 
 ![blue RetakeSuspicious](docs/gifs/action_blue_RetakeSuspicious.gif)
 
+**Interactive dashboard.** Every matchup also writes a self-contained **`dashboard.html`**
+that, in one screen, plays the map animation, shows the per-step **tactic log** (each side's
+representative action plus counts), and draws the running **attack/defense score** chart.
+Open it in any browser (a committed example is `docs/sample_run/dashboard.html`).
+
 **The 3×3 result at a glance.** Left is the final compromised fraction (lower is better for
-the defender), middle is blue reward, right is worm-detection F1.
+the defender), middle is the attack score A, right is the defense score D.
 
 ![3x3 grid](docs/gifs/grid_heatmaps.png)
 
-Final compromised fraction, averaged over 5 seeds (lower is better for the defender):
+**Single-number verdict (composite score).** Each side gets one score in `[0,1]`: attack
+score A (spread + takeover + speed + stealth) and defense score D (containment + worm
+detection + availability), each a plain average of those parts. Averaged over the 9 matchups
+(5 seeds):
 
-| attacker \ defender | rule | llm | rl |
-| --- | --- | --- | --- |
-| **rule** | 0.36 | 0.57 | 0.86 |
-| **llm** | 0.22 | 0.47 | 0.57 |
-| **rl** | 0.23 | 0.39 | 0.81 |
+| agentic | attack score A | defense score D |
+| --- | --- | --- |
+| **rule** | 0.54 | 0.77 |
+| **llm** | 0.52 | 0.64 |
+| **rl** | 0.47 | 0.54 |
 
-The `rule` defender column is the lowest everywhere, so it is the strongest defense. A GIF
-for **every** matchup and **every** action, plus per-matchup figures, is regenerated under
-`results/` by the commands above (`results/` is not committed to keep the repo light).
+`rule` wins on both sides and is clearest on defense, matching the CAGE Challenge 4 finding
+that heuristics beat learned agents. A GIF for every matchup and every action, plus
+per-matchup figures and dashboards, regenerate under `results/` (not committed, to keep the
+repo light).
 
 ---
 

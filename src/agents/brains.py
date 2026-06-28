@@ -17,6 +17,15 @@ from agents import actions, llm
 _BLUE_Q = None
 _RED = {"q": None, "eps": 0.0, "rng": None, "train": False}
 RED_STASH = []                       # (name, state, aid) collected during rl-red training
+RED_ACTLOG = []                      # effective red action ids emitted this step (tactic log)
+
+
+def pop_red_actlog():
+    """Return and clear the red action ids emitted since the last call (one per red
+    session-agent that acted this step). Used by run.rollout for the dashboard."""
+    global RED_ACTLOG
+    s, RED_ACTLOG = RED_ACTLOG, []
+    return s
 
 
 def use_rl(q_blue, q_red):
@@ -58,7 +67,8 @@ class _Red(BaseAgent):
         pass
 
     def _emit(self, aid, obs):
-        action, _ = actions.make_red_action(aid, obs, self.name, self.mem, self.np_random)
+        action, eff = actions.make_red_action(aid, obs, self.name, self.mem, self.np_random)
+        RED_ACTLOG.append(int(eff))
         self.t += 1
         return action
 

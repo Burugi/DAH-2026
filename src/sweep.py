@@ -20,11 +20,12 @@ RESULTS = os.path.join(ROOT, "results")
 sys.path.insert(0, SRC)
 os.environ.setdefault("SDL_VIDEODRIVER", "dummy")     # headless pygame for GIF export
 import run
-from viz import plot, render
+from viz import plot, render, dashboard, score
 from agents.brains import use_rl
 from agents.rl import ensure_trained
 
-SUMMARY_COLS = ["red_type", "blue_type", "final_compromise", "peak_compromise",
+SUMMARY_COLS = ["red_type", "blue_type", "attack_score", "defense_score", "availability",
+                "final_compromise", "peak_compromise",
                 "time_to_first_compromise", "compromise_auc", "blue_reward_total",
                 "recovered", "comp_F1", "jam_F1", "gps_F1",
                 "link_drop_F1", "snr_poison_F1", "bw_drain_F1",
@@ -47,8 +48,8 @@ def grid_figures(sweep_dir, reds, blues, metrics, curves, name):
     """3x3 heatmaps + 9-panel compromise-vs-step grid."""
     M = lambda key: np.array([[metrics[(r, b)][key] for b in blues] for r in reds])
     panels = [("final_compromise", "final compromised fraction", "{:.2f}", "Reds"),
-              ("blue_reward_total", "blue cumulative reward", "{:.0f}", "viridis"),
-              ("comp_F1", "worm/compromise detection F1", "{:.2f}", "Greens")]
+              ("attack_score", "attack score A (0-1)", "{:.2f}", "Oranges"),
+              ("defense_score", "defense score D (0-1)", "{:.2f}", "Greens")]
     fig, axs = plt.subplots(1, 3, figsize=(16, 4.6))
     for ax, (key, ttl, fmt, cmap) in zip(axs, panels):
         _heatmap(ax, M(key), reds, blues, ttl, fmt, cmap)
@@ -100,6 +101,7 @@ def _run_one_scenario(cfg_base, scenario_id, reds, blues, sweep_dir, no_gif):
             res = {seed: run.rollout(cfg, seed, r, b) for seed in cfg["seeds"]}
             m = run.save_run(cfg, out, r, b, res)
             plot.make_figs(out)
+            dashboard.build_dashboard(out)
             if not no_gif:
                 render.save_gif(out)
             ros = [ro.sum(1) for (_, _, ro, _) in res.values()]
@@ -166,9 +168,16 @@ def main():
     with open(os.path.join(sweep_dir, "summary.csv"), "w", newline="", encoding="utf-8") as f:
         csv.writer(f).writerows([scen_cols] + all_rows)
 
+    rows_d = [{"red_type": r[1], "blue_type": r[2], "attack_score": r[3], "defense_score": r[4]}
+              for r in all_rows]
+    atk, dfn = score.leaderboard(rows_d)
+    print("\n  Leaderboard (mean over opponents/scenarios):")
+    print("   attack  A:  " + "  ".join(f"{k}={v}" for k, v in atk))
+    print("   defense D:  " + "  ".join(f"{k}={v}" for k, v in dfn))
+
     print(f"\n-> {os.path.relpath(sweep_dir, ROOT)}/")
     print(f"   summary.csv  ({len(all_rows)} rows)  "
-          f"grid_heatmaps.png  grid_curves.png")
+          f"grid_heatmaps.png  grid_curves.png  + dashboard.html per matchup")
     print(f"   total time: {round(time.time() - t0, 1)}s")
 
 

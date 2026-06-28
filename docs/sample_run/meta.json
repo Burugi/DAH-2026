@@ -1,0 +1,176 @@
+{
+ "run_id": "baseline_rule_vs_rl",
+ "cyborg": "3.1",
+ "config": {
+  "name": "sweep",
+  "env": "B",
+  "fleet": {
+   "n_uav": 12,
+   "n_ugv": 6,
+   "grid": 100,
+   "max_link": 40
+  },
+  "steps": 40,
+  "seeds": [
+   0,
+   1,
+   2,
+   3,
+   4
+  ],
+  "red_types": [
+   "rule",
+   "llm",
+   "rl"
+  ],
+  "blue_types": [
+   "rule",
+   "llm",
+   "rl"
+  ],
+  "sim": {
+   "starting_num_red": 3,
+   "red_spawn_rate": 0.2,
+   "max_length_data_links": 40
+  },
+  "defense": {
+   "detector": "multisensor",
+   "snr_thresh": 6,
+   "gps_thresh": 8,
+   "response": "safe_mode"
+  },
+  "attacks": [
+   {
+    "type": "jam",
+    "targets": [
+     0,
+     1,
+     2,
+     3
+    ],
+    "t": [
+     10,
+     25
+    ],
+    "drop": 22
+   },
+   {
+    "type": "gps_spoof",
+    "targets": [
+     12,
+     13
+    ],
+    "t": [
+     15,
+     35
+    ],
+    "drift": 3.0
+   }
+  ]
+ },
+ "red_type": "rule",
+ "blue_type": "rl",
+ "n_entities": 18,
+ "types": [
+  "uav",
+  "uav",
+  "uav",
+  "uav",
+  "uav",
+  "uav",
+  "uav",
+  "uav",
+  "uav",
+  "uav",
+  "uav",
+  "uav",
+  "ugv",
+  "ugv",
+  "ugv",
+  "ugv",
+  "ugv",
+  "ugv"
+ ],
+ "seeds": [
+  0,
+  1,
+  2,
+  3,
+  4
+ ],
+ "steps_used": 40,
+ "red_action_names": [
+  "Sleep",
+  "DiscoverDrones",
+  "ExploitNearest",
+  "ExploitRandom",
+  "ExploitFarthest",
+  "SeizeControl",
+  "SpreadWorm",
+  "JamNearest",
+  "JamFarthest",
+  "BlockComms",
+  "Persist",
+  "TargetLeader",
+  "ExploitKnown",
+  "FloodAll"
+ ],
+ "blue_action_names": [
+  "Sleep",
+  "Monitor",
+  "Analyse",
+  "RemoveSessions",
+  "RetakeSuspicious",
+  "RetakeRandom",
+  "BlockSuspicious",
+  "AllowTraffic",
+  "DeployDecoy"
+ ],
+ "defense": {
+  "detector": "multisensor",
+  "response": "safe_mode",
+  "comp_F1": 0.866,
+  "jam_F1": 1.0,
+  "gps_F1": 0.968,
+  "link_drop_F1": 0.0,
+  "snr_poison_F1": 0.0,
+  "bw_drain_F1": 0.0,
+  "gps_err_before": 89.1,
+  "gps_err_after": 6.78
+ },
+ "metrics": {
+  "final_compromise": 0.856,
+  "peak_compromise": 0.856,
+  "time_to_first_compromise": 0.0,
+  "compromise_auc": 0.568,
+  "blue_reward_total": -547.2,
+  "recovered": 0.6,
+  "comp_F1": 0.866,
+  "jam_F1": 1.0,
+  "gps_F1": 0.968,
+  "link_drop_F1": 0.0,
+  "snr_poison_F1": 0.0,
+  "bw_drain_F1": 0.0,
+  "gps_err_before": 89.1,
+  "gps_err_after": 6.78,
+  "attack_score": 0.639,
+  "defense_score": 0.462,
+  "availability": 0.404
+ },
+ "metrics_std": {
+  "final_compromise": 0.044,
+  "peak_compromise": 0.044,
+  "time_to_first_compromise": 0.0,
+  "compromise_auc": 0.06,
+  "blue_reward_total": 35.712,
+  "recovered": 0.8,
+  "comp_F1": 0.01,
+  "jam_F1": 0.0,
+  "gps_F1": 0.006,
+  "link_drop_F1": 0.0,
+  "snr_poison_F1": 0.0,
+  "bw_drain_F1": 0.0,
+  "gps_err_before": 0.0,
+  "gps_err_after": 2.107
+ }
+}

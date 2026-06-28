@@ -46,7 +46,9 @@ GAL_CFG = {
 RED_PRIM = {0: "Sleep", 1: "Sleep(observe)", 2: "ExploitDroneVulnerability",
             3: "ExploitDroneVulnerability", 4: "ExploitDroneVulnerability",
             5: "SeizeControl", 6: "ExploitDroneVulnerability", 7: "FloodBandwidth",
-            8: "FloodBandwidth", 9: "BlockTraffic", 10: "SeizeControl"}
+            8: "FloodBandwidth", 9: "BlockTraffic", 10: "SeizeControl",
+            11: "ExploitDroneVulnerability", 12: "ExploitDroneVulnerability",
+            13: "FloodBandwidth"}
 BLUE_PRIM = {0: "Sleep", 1: "Sleep(observe)", 2: "Sleep(observe)",
              3: "RemoveOtherSessions", 4: "RetakeControl", 5: "RetakeControl",
              6: "BlockTraffic", 7: "AllowTraffic", 8: "Sleep(decoy)"}
