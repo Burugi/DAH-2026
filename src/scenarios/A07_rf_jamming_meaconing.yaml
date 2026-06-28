@@ -1,0 +1,41 @@
+id: A7
+name: rf_jamming_meaconing
+
+description: >
+  Attacker deploys broadband or reactive RF jamming to sever telemetry and
+  inter-drone data links, combined with meaconing (re-broadcasting authentic
+  signals with delay) to introduce false timing and navigation offsets across
+  the swarm.
+
+mitre_attack:
+  - T1498   # Network Denial of Service (RF jamming)
+  - T1565   # Data Manipulation (meaconing: replayed GNSS signal)
+
+attacks:
+  # Phase 1: hard jam on lead UAVs to cut C2 link
+  - type: jam
+    targets: [0, 1, 2, 3]
+    t: [5, 18]
+    drop: 25.0            # pushes SNR below link_up threshold → comms severed
+
+  # Phase 2: extended medium jam on wider formation (reactive jammer)
+  - type: jam
+    targets: [0, 1, 2, 3, 4, 5, 6]
+    t: [18, 35]
+    drop: 14.0            # sustained degradation without full cutoff
+
+  # Meaconing: re-broadcast causes position drift on jammed UAVs
+  - type: gps_spoof
+    targets: [0, 1, 2, 3]
+    t: [10, 35]
+    drift: 1.5
+
+red_hint: [7, 8, 1]    # JamNearest, JamFarthest, DiscoverDrones
+
+defense:
+  detector: multisensor
+  snr_thresh: 6.0
+  gps_thresh: 6.0
+  canary_recall: 0.80
+  canary_fp: 0.05
+  response: isolate

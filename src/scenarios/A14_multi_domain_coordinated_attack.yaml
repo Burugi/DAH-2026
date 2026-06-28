@@ -1,0 +1,58 @@
+id: A14
+name: multi_domain_coordinated_attack
+
+description: >
+  Attacker orchestrates jamming, firmware worm, and GPS spoofing in a
+  time-coordinated sequence: jamming creates a detection blind spot, the worm
+  spreads laterally during the blackout, and GPS spoofing guides infected
+  drones to attacker-chosen positions — each layer defeats a different
+  single-domain defense.
+
+mitre_attack:
+  - T1498   # Network Denial of Service (jamming as concealment layer)
+  - T1021   # Remote Services (worm lateral movement during jam window)
+  - T1565   # Data Manipulation (GPS spoofing for position control)
+  - T1195   # Supply Chain Compromise (worm seeded via firmware)
+
+attacks:
+  # Layer 1 — Jamming creates C2 blackout and suppresses canary signals
+  - type: jam
+    targets: [0, 1, 2, 3, 4, 5]
+    t: [8, 20]
+    drop: 20.0            # hard jam: forces link_up=0 on targets
+
+  # Layer 2 — Residual noise jam during exploitation phase
+  - type: jam
+    targets: [0, 1, 2, 3]
+    t: [20, 32]
+    drop: 9.0
+
+  # Layer 3 — GPS spoofing activates once jam suppresses IMU cross-check
+  - type: gps_spoof
+    targets: [0, 1, 2]
+    t: [10, 40]
+    drift: 1.6            # IMU cross-check is blinded during jam → drift goes undetected
+
+  # Extended GPS manipulation on worm-spread secondary hosts
+  - type: gps_spoof
+    targets: [3, 4, 5]
+    t: [22, 40]
+    drift: 2.0
+
+red_hint: [7, 2, 5, 6, 10]   # JamNearest, ExploitNearest, SeizeControl, SpreadWorm, Persist
+
+worm:
+  dormancy_steps: 8
+  seed_drones: [0, 1]
+  spread_mode: proximity
+  spread_interval: 3
+  max_infected: 6
+  stealth: true
+
+defense:
+  detector: multisensor
+  snr_thresh: 4.0         # must catch jam even through noise
+  gps_thresh: 5.0
+  canary_recall: 0.58     # jam degrades canary recall during blackout window
+  canary_fp: 0.09
+  response: isolate       # hard response needed: multi-vector attack overwhelms safe_mode

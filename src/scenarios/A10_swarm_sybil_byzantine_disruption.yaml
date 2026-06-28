@@ -1,0 +1,36 @@
+id: A10
+name: swarm_sybil_byzantine_disruption
+
+description: >
+  Attacker injects multiple fake node identities (Sybil) into the MANET
+  routing plane, manipulating consensus and route advertisements to create
+  black-hole or wormhole paths that fragment the swarm or redirect traffic
+  through attacker-controlled nodes.
+
+mitre_attack:
+  - T1584   # Compromise Infrastructure (fake MANET node identities)
+  - T1565   # Data Manipulation (routing table poisoning)
+  - T1499   # Endpoint Denial of Service (black-hole routing → packet loss)
+
+attacks:
+  # Sybil nodes appear as high-quality neighbours by boosting SNR reports
+  - type: snr_poison
+    targets: [3, 4, 5]   # attacker-controlled fake nodes appear attractive
+    t: [5, 40]
+    boost: 18.0   # inflated SNR draws routing traffic through attacker nodes
+
+  # Black-hole effect: traffic routed through Sybil nodes is dropped
+  - type: bandwidth_drain
+    targets: [0, 1, 2]   # legitimate nodes lose effective bandwidth
+    t: [8, 40]
+    drain: 6.0
+
+red_hint: [6, 9, 3]    # SpreadWorm, BlockComms, ExploitRandom
+
+defense:
+  detector: multisensor
+  snr_thresh: 6.0
+  gps_thresh: 8.0
+  canary_recall: 0.60   # Sybil nodes mimic legitimate heartbeats
+  canary_fp: 0.12       # routing churn naturally causes detection noise
+  response: isolate

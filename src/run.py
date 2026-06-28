@@ -63,15 +63,100 @@ def build_env(cfg, seed, red_class):
     return fleet, cyborg, env, ip_to_drone
 
 
+def _worm_step(t, cfg, cyborg, ip_to_drone, owned, rng):
+    """Advance worm propagation by one step if the scenario defines a worm block.
+
+    Reads cfg['worm'] and, after dormancy_steps have passed, exploits the
+    highest-SNR neighbour of each infected drone every spread_interval steps.
+    Uses CybORG's internal state directly (no env.step call) so it does not
+    consume a blue action slot.
+    """
+    w = cfg.get("worm")
+    if not w:
+        return
+    if t < w.get("dormancy_steps", 0):
+        return
+    if (t - w.get("dormancy_steps", 0)) % w.get("spread_interval", 4) != 0:
+        return
+    if len(owned) >= w.get("max_infected", 999):
+        return
+
+    drone_to_ip = {v: k for k, v in ip_to_drone.items()}
+    infected = list(owned)
+    mode = w.get("spread_mode", "proximity")
+
+    for src_id in infected:
+        if len(owned) >= w.get("max_infected", 999):
+            break
+        src_ip = drone_to_ip.get(src_id)
+        if src_ip is None:
+            continue
+        candidates = [d for d in range(len(ip_to_drone)) if d not in owned
+                      and d in drone_to_ip]
+        if not candidates:
+            continue
+        if mode == "proximity":
+            target_id = rng.choice(candidates)   # proximity best-effort via random
+        elif mode == "sequential":
+            target_id = min(candidates)
+        else:
+            target_id = rng.choice(candidates)
+        tgt_ip = drone_to_ip.get(target_id)
+        if tgt_ip is None:
+            continue
+        try:
+            from CybORG.Simulator.Actions import ExploitDroneVulnerability, SeizeControl
+            red_agent = next(a for a in cyborg.environment_controller.agent_interfaces
+                             if "red" in a.lower())
+            session = 0
+            exploit = ExploitDroneVulnerability(
+                ip_address=tgt_ip, agent=red_agent, session=session)
+            result = cyborg.environment_controller.execute_action(
+                exploit, red_agent)
+            if getattr(result, "success", False) is not False:
+                seize = SeizeControl(
+                    ip_address=tgt_ip, agent=red_agent, session=session)
+                cyborg.environment_controller.execute_action(seize, red_agent)
+        except Exception:
+            pass   # worm spread is best-effort; never crash the rollout
+
+
 def rollout(cfg, seed, red_type="rule", blue_type="rule"):
     """One evaluation episode. RL policies must be installed via use_rl() first."""
     fleet, cyborg, env, ip_to_drone = build_env(cfg, seed, RED_BRAINS[red_type])
     n = fleet["n"]
     import random; random.seed(seed)
+    rng_worm = np.random.default_rng(seed + 42)
     reward = np.zeros(cfg["steps"])
     red_owned = np.zeros((cfg["steps"], n), np.int8)
+
+    # ── Pre-compromise: insider / side-channel / leader-takeover (A12/A15/A17) ──
+    scenario = cfg.get("_scenario") or {}
+    pre_comp = scenario.get("pre_compromise", {})
+    if pre_comp:
+        drone_to_ip = {v: k for k, v in ip_to_drone.items()}
+        for drone_id in pre_comp.get("drones", []):
+            tgt_ip = drone_to_ip.get(drone_id)
+            if tgt_ip is None:
+                continue
+            try:
+                from CybORG.Simulator.Actions import ExploitDroneVulnerability, SeizeControl
+                red_agent = next(a for a in cyborg.environment_controller.agent_interfaces
+                                 if "red" in a.lower())
+                exploit = ExploitDroneVulnerability(
+                    ip_address=tgt_ip, agent=red_agent, session=0)
+                cyborg.environment_controller.execute_action(exploit, red_agent)
+                seize = SeizeControl(ip_address=tgt_ip, agent=red_agent, session=0)
+                cyborg.environment_controller.execute_action(seize, red_agent)
+            except Exception:
+                pass
+
     for t in range(cfg["steps"]):
         owned = compromised_drones(cyborg, n)
+
+        # ── Worm propagation engine (A1, A9, A14, A17) ──────────────────────
+        _worm_step(t, cfg, cyborg, ip_to_drone, owned, rng_worm)
+
         ctx = {"compromised": owned, "ip_to_drone": ip_to_drone, "n": n}
         live = [a for a in env.active_agents if a in env.agent_actions]
         acts = {a: make_blue_index(blue_decide(blue_type, env, a, ctx), env, a, ctx)
@@ -100,9 +185,14 @@ def attack_defense_metrics(reward, red_owned, n, dmetric):
         "compromise_auc": float(comp_frac.mean()),
         "blue_reward_total": float(reward.sum()),
         "recovered": int(drops),
-        "comp_F1": dmetric["comp"]["F1"],
-        "jam_F1": dmetric["jam"]["F1"], "gps_F1": dmetric["gps"]["F1"],
-        "gps_err_before": dmetric["gps_err_before"], "gps_err_after": dmetric["gps_err_after"],
+        "comp_F1":        dmetric["comp"]["F1"],
+        "jam_F1":         dmetric["jam"]["F1"],
+        "gps_F1":         dmetric["gps"]["F1"],
+        "link_drop_F1":   dmetric.get("link_drop",  {}).get("F1", 0.0),
+        "snr_poison_F1":  dmetric.get("snr_poison", {}).get("F1", 0.0),
+        "bw_drain_F1":    dmetric.get("bw_drain",   {}).get("F1", 0.0),
+        "gps_err_before": dmetric["gps_err_before"],
+        "gps_err_after":  dmetric["gps_err_after"],
     }
 
 
@@ -153,30 +243,49 @@ def save_run(cfg, out, red_type, blue_type, results):
                "steps_used": int(Tmin),
                "defense": {"detector": dfn.get("detector", "none"),
                            "response": dfn.get("response", "none"),
-                           "comp_F1": metrics["comp_F1"],
-                           "jam_F1": metrics["jam_F1"], "gps_F1": metrics["gps_F1"],
+                           "comp_F1":       metrics["comp_F1"],
+                           "jam_F1":        metrics["jam_F1"],
+                           "gps_F1":        metrics["gps_F1"],
+                           "link_drop_F1":  metrics["link_drop_F1"],
+                           "snr_poison_F1": metrics["snr_poison_F1"],
+                           "bw_drain_F1":   metrics["bw_drain_F1"],
                            "gps_err_before": metrics["gps_err_before"],
-                           "gps_err_after": metrics["gps_err_after"]},
+                           "gps_err_after":  metrics["gps_err_after"]},
                "metrics": metrics, "metrics_std": metrics_std},
               open(os.path.join(out, "meta.json"), "w", encoding="utf-8"),
               ensure_ascii=False, indent=1)
     return metrics
 
 
+def _apply_scenario(cfg, scenario_id):
+    """Load a scenario YAML and merge its attacks/defense into cfg. Returns updated cfg."""
+    from scenarios import load_scenario
+    return load_scenario(scenario_id, cfg)
+
+
 def main():
-    ap = argparse.ArgumentParser()
+    ap = argparse.ArgumentParser(
+        description="Run one red-vs-blue matchup on the DroneSwarm sim.")
     ap.add_argument("config")
     ap.add_argument("--red", default="rule", choices=list(RED_BRAINS))
     ap.add_argument("--blue", default="rule", choices=["rule", "llm", "rl"])
+    ap.add_argument("--scenario", default=None, metavar="ID",
+                    help="attack scenario id to inject (e.g. A1, A7, A14)")
     a = ap.parse_args()
     cfg = yaml.safe_load(open(a.config, encoding="utf-8"))
+
+    if a.scenario:
+        cfg = _apply_scenario(cfg, a.scenario)
+        print(f"scenario: {a.scenario} — attacks: "
+              f"{[atk['type'] for atk in cfg.get('attacks') or []]}")
 
     if "rl" in (a.red, a.blue):                            # eval needs frozen policies
         from agents.rl import ensure_trained
         use_rl(*ensure_trained(cfg))
 
-    h = hashlib.sha1(json.dumps(cfg, sort_keys=True).encode()).hexdigest()[:8]
-    run_id = f"{cfg['name']}_{a.red}_vs_{a.blue}_{h}"
+    scenario_tag = f"_{a.scenario}" if a.scenario else ""
+    h = hashlib.sha1(json.dumps(cfg, sort_keys=True, default=str).encode()).hexdigest()[:8]
+    run_id = f"{cfg['name']}_{a.red}_vs_{a.blue}{scenario_tag}_{h}"
     out = os.path.join(RESULTS, run_id)
     dfn = cfg.get("defense") or {}
     print(f"CybORG v{CYBORG_VERSION}  {cfg['name']}  red={a.red} blue={a.blue} "

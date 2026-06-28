@@ -74,22 +74,40 @@ class RuleRed(_Red):
 
 
 class LLMRed(_Red):
-    """LLM chooses an attack from the menu; offline stub spreads wide + jams."""
+    """LLM chooses an attack from the menu; offline stub runs an autonomous kill-chain.
+
+    When ANTHROPIC_API_KEY is set, the LLM receives the full action menu plus a
+    high-level kill-chain objective and autonomously sequences actions across steps
+    (Incalmo-style: declarative goal → concrete action selection).
+    """
     def get_action(self, obs, action_space):
         nvis = len(actions.ip_list(obs))
+        has_target = self.mem.get("target") is not None
+        last_ok = obs.get("success") is True
 
         def stub():
-            if self.mem.get("target") is not None and obs.get("success") is True:
-                return 5                                  # finish the takeover
+            # Autonomous kill-chain: discover → exploit → seize → spread → persist
+            if has_target and last_ok:
+                return 5                                  # seize pending exploit
             if nvis == 0:
                 return 1                                  # discover
-            return 4 if self.t % 3 else 7                 # farthest-exploit / jam
+            if self.t < 5:
+                return 2                                  # ExploitNearest early on
+            if self.t % 5 == 0:
+                return 7                                  # periodic jam for disruption
+            return 6 if self.mem.get("held") else 4      # spread worm or exploit farthest
 
-        prompt = (f"You are a red (attacker) agent on a drone swarm network.\n"
-                  f"Visible drones: {nvis}. Last action success: {obs.get('success')}. "
-                  f"Have an exploited target ready to seize: "
-                  f"{self.mem.get('target') is not None}.\n"
-                  f"Pick the best NEXT attack action by id:\n{actions.red_menu_text()}")
+        phase = ("early" if self.t < 8 else "mid" if self.t < 20 else "late")
+        prompt = (
+            f"You are an autonomous red (attacker) agent executing a kill-chain on a "
+            f"drone swarm network.\n"
+            f"Objective: compromise as many drones as possible via lateral worm spread.\n"
+            f"Phase: {phase}. Step: {self.t}. Visible drones: {nvis}. "
+            f"Last action success: {obs.get('success')}. "
+            f"Exploit target ready to seize: {has_target}. "
+            f"Held (owned) drone: {self.mem.get('held') is not None}.\n"
+            f"Select the single best action id for this step:\n{actions.red_menu_text()}"
+        )
         aid = llm.choose(prompt, range(actions.RED_N), stub)
         return self._emit(aid, obs)
 

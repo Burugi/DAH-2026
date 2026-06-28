@@ -1,0 +1,38 @@
+id: A17
+name: swarm_c2_takeover_leader_compromise
+
+description: >
+  Attacker targets the swarm coordinator or leader-elected node to seize
+  formation control, then re-assigns flight paths, redistributes sub-swarm
+  roles, or commands self-destructive manoeuvres across the entire formation
+  from a single point of compromise.
+
+mitre_attack:
+  - T1210   # Exploit Remote Services (exploit leader node)
+  - T1078   # Valid Accounts (impersonate leader after compromise)
+  - T1565   # Data Manipulation (forge formation commands)
+  - T1489   # Service Stop (mission denial via fleet-wide mis-command)
+
+attacks: []   # concept-only: leader election layer not modelled in CybORG DroneSwarm
+
+pre_compromise:
+  drones: [0]           # leader drone (index 0) compromised first; worm spreads from it
+  reason: "leader node targeted first to maximise cascade effect via worm"
+
+red_hint: [2, 5, 10, 6]   # ExploitNearest (leader), SeizeControl, Persist, SpreadWorm
+
+worm:
+  dormancy_steps: 0
+  seed_drones: [0]        # drone 0 assumed to be current leader
+  spread_mode: sequential # leader sequentially compromises its sub-swarm
+  spread_interval: 5
+  max_infected: 10
+  stealth: false          # aggressive takeover; speed over stealth
+
+defense:
+  detector: multisensor
+  snr_thresh: 6.0
+  gps_thresh: 8.0
+  canary_recall: 0.75
+  canary_fp: 0.05
+  response: isolate

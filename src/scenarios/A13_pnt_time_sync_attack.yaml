@@ -1,0 +1,31 @@
+id: A13
+name: pnt_time_sync_attack
+
+description: >
+  Attacker manipulates GPS-derived timing signals to corrupt PNT
+  (Positioning, Navigation, Timing) synchronisation across the swarm,
+  invalidating log timestamps, breaking replay-attack defenses that rely
+  on sequence numbers, and desynchronising cooperative manoeuvres.
+
+mitre_attack:
+  - T1565   # Data Manipulation (timestamp and sequence number corruption)
+  - T1557   # Adversary-in-the-Middle (GPS timing signal interception)
+  - T1499   # Endpoint Denial of Service (desynchronised cooperative control)
+
+attacks:
+  # Time-offset spoof: small positional drift as proxy for timing error
+  # (fleet.py has no clock model; GPS position is the nearest analogue)
+  - type: gps_spoof
+    targets: [0, 1, 2, 3, 4, 5]    # broad swarm-wide timing disruption
+    t: [5, 40]
+    drift: 0.4                      # very small spatial drift (timing attack is subtle)
+
+red_hint: [1, 9, 0]    # DiscoverDrones, BlockComms, Sleep
+
+defense:
+  detector: multisensor
+  snr_thresh: 6.0
+  gps_thresh: 3.0       # very tight: 0.4 m/step drift must be caught early
+  canary_recall: 0.55   # timing corruption is hard to attribute to attack
+  canary_fp: 0.10       # clock drift mimics benign NTP jitter
+  response: safe_mode

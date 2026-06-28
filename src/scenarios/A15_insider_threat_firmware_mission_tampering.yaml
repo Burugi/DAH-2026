@@ -1,0 +1,30 @@
+id: A15
+name: insider_threat_firmware_mission_tampering
+
+description: >
+  A trusted operator or maintenance technician abuses legitimate physical or
+  logical access to modify firmware, mission waypoints, or encryption keys
+  before deployment, creating persistent effects that are nearly impossible
+  to distinguish from authorised configuration changes.
+
+mitre_attack:
+  - T1078   # Valid Accounts (insider uses own credentials)
+  - T1542   # Pre-OS Boot / Firmware (mission-time firmware modification)
+  - T1565   # Data Manipulation (waypoint/parameter tampering)
+  - T1552   # Unsecured Credentials (key export during maintenance)
+
+attacks: []   # concept-only: pre-deployment insider action not modelled in sim
+
+pre_compromise:
+  drones: [0, 1]        # insider pre-compromised two drones during pre-flight maintenance
+  reason: "authorised physical access; no network exploit needed"
+
+red_hint: [5, 10, 0]   # SeizeControl, Persist, Sleep (low operational footprint)
+
+defense:
+  detector: none        # insider already has authorised access; runtime detection limited
+  snr_thresh: 6.0
+  gps_thresh: 8.0
+  canary_recall: 0.40   # insider can disable or spoof canary signals
+  canary_fp: 0.03
+  response: none

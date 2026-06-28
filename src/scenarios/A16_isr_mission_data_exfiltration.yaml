@@ -1,0 +1,29 @@
+id: A16
+name: isr_mission_data_exfiltration
+
+description: >
+  Attacker on a compromised drone silently exfiltrates ISR imagery and target
+  data over a low-bandwidth covert channel (steganography in telemetry packets
+  or out-of-band RF burst) without triggering throughput-based anomaly detection.
+
+mitre_attack:
+  - T1041   # Exfiltration Over C2 Channel (covert telemetry exfil)
+  - T1048   # Exfiltration Over Alternative Protocol (out-of-band RF burst)
+  - T1027   # Obfuscated Files or Information (steganographic encoding)
+
+attacks:
+  # Covert exfil side-channel continuously drains bandwidth on compromised drones
+  - type: bandwidth_drain
+    targets: [0, 1, 2]
+    t: [5, 40]
+    drain: 2.5   # subtle: stays well above link_up threshold to avoid detection
+
+red_hint: [5, 10, 0]   # SeizeControl, Persist, Sleep (maintain access silently)
+
+defense:
+  detector: multisensor
+  snr_thresh: 6.0
+  gps_thresh: 8.0
+  canary_recall: 0.50   # exfil channel mimics normal telemetry cadence
+  canary_fp: 0.04
+  response: isolate

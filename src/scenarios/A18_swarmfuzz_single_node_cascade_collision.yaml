@@ -1,0 +1,35 @@
+id: A18
+name: swarmfuzz_single_node_cascade_collision
+
+description: >
+  Based on SwarmFuzz (DSN 2023): a gradient-guided optimiser identifies the
+  single drone and minimal GPS offset that, when spoofed, propagates through
+  cooperative collision-avoidance algorithms to cause cascading path deviations
+  or collisions across the entire swarm — one injection point, fleet-wide effect.
+
+mitre_attack:
+  - T1565   # Data Manipulation (single-node GPS injection)
+  - T1499   # Endpoint Denial of Service (cascade collision / mission abort)
+
+attacks:
+  # Single high-impact drone targeted (graph-centrality proxy: drone 3)
+  - type: gps_spoof
+    targets: [3]
+    t: [6, 15]
+    drift: 3.5            # sharper offset needed to trigger cooperative-avoidance cascade
+
+  # Secondary cascade: neighbouring drones react and deviate
+  - type: gps_spoof
+    targets: [2, 4, 5]
+    t: [10, 25]
+    drift: 2.0            # cascade-induced position error on reacting neighbours
+
+red_hint: [2, 5]       # ExploitNearest, SeizeControl (compromise the pivot node)
+
+defense:
+  detector: multisensor
+  snr_thresh: 6.0
+  gps_thresh: 3.5         # tight: single-drone spoofing must be caught before cascade fires
+  canary_recall: 0.82
+  canary_fp: 0.04
+  response: safe_mode     # correct the seed drone position to stop cascade

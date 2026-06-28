@@ -1,0 +1,36 @@
+id: A2
+name: gcs_mavlink_command_injection
+
+description: >
+  Attacker compromises the Ground Control Station and injects forged MAVLink
+  commands over the legitimate C2 channel to hijack flight paths, force RTL,
+  or disable payloads — evading detection by blending with normal operator traffic.
+
+mitre_attack:
+  - T1190   # Exploit Public-Facing Application (GCS web/API)
+  - T1566   # Phishing (GCS operator workstation)
+  - T1565   # Data Manipulation (MAVLink command forgery)
+  - T1489   # Service Stop (mission denial)
+
+attacks:
+  # Hard redirect: GCS injects wrong destination coordinates for lead UAVs
+  - type: position_override
+    targets: [0, 1]
+    t: [8, 30]
+    dest: [5.0, 5.0]   # attacker-chosen coordinates (corner of grid)
+
+  # Legitimate C2 link stays alive (attacker rides it), mild SNR variance
+  - type: bandwidth_drain
+    targets: [0, 1]
+    t: [8, 30]
+    drain: 2.0
+
+red_hint: [5, 9, 10]   # SeizeControl, BlockComms, Persist
+
+defense:
+  detector: multisensor
+  snr_thresh: 6.0
+  gps_thresh: 8.0
+  canary_recall: 0.65
+  canary_fp: 0.08       # legitimate GCS traffic raises FP risk
+  response: isolate

@@ -1,0 +1,41 @@
+id: A8
+name: c2_link_hijack_deauth
+
+description: >
+  Attacker sends deauthentication frames to sever the telemetry radio session,
+  then hijacks the session to seize direct control of the drone, bypassing
+  GCS operator oversight entirely.
+
+mitre_attack:
+  - T1499   # Endpoint Denial of Service (deauth to disrupt existing session)
+  - T1078   # Valid Accounts (session hijack using captured credentials/tokens)
+  - T1557   # Adversary-in-the-Middle (radio session interception)
+
+attacks:
+  # Deauth phase: force session drop via link_drop (cleaner than jam for deauth model)
+  - type: link_drop
+    targets: [0, 1]
+    t: [6, 9]
+    floor: 0.5
+
+  # Hijack phase: attacker rides the re-established session; position drift from wrong commands
+  - type: position_override
+    targets: [0, 1]
+    t: [10, 30]
+    dest: [90.0, 90.0]   # attacker diverts drones to far corner
+
+  # Residual SNR degradation while hijack session is active
+  - type: bandwidth_drain
+    targets: [0, 1]
+    t: [10, 30]
+    drain: 3.5
+
+red_hint: [7, 5, 10]   # JamNearest, SeizeControl, Persist
+
+defense:
+  detector: threshold
+  snr_thresh: 5.5
+  gps_thresh: 8.0
+  canary_recall: 0.72
+  canary_fp: 0.06
+  response: isolate
