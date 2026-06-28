@@ -207,5 +207,72 @@ update(0);
 </script></body></html>"""
 
 
+def preview_png(run_dir, step=None):
+    """Static one-frame preview of the dashboard (map + score chart + tactic log)
+    saved as dashboard_preview.png, for embedding in docs/README."""
+    import matplotlib
+    matplotlib.use("Agg")
+    import matplotlib.pyplot as plt
+    run_dir = _resolve(run_dir)
+    z = np.load(os.path.join(run_dir, "arrays.npz"), allow_pickle=True)
+    meta = json.load(open(os.path.join(run_dir, "meta.json"), encoding="utf-8"))
+    cfg = meta["config"]; types = list(z["types"]); n = len(types)
+    n_uav = types.count("uav"); grid = cfg["fleet"]["grid"]
+    pt, pr = z["pos_true"][0], z["pos_rep"][0]; T = pt.shape[0]
+    ro, ljam, lgps = z["red_owned"][0], z["label_jam"][0], z["label_gps"][0]
+    det = (_seed0(z, "det_jam", T, (T, n)).astype(bool)
+           | _seed0(z, "det_gps", T, (T, n)).astype(bool)
+           | _seed0(z, "det_comp", T, (T, n)).astype(bool))
+    a_t, d_t = _seed0(z, "a_t", T, (T,)), _seed0(z, "d_t", T, (T,))
+    ra = _seed0(z, "red_act", T, (T,)).astype(int); ba = _seed0(z, "blue_act", T, (T,)).astype(int)
+    rc = z["red_cnt"][0] if "red_cnt" in z.files else np.zeros((T, 1), int)
+    bc = z["blue_cnt"][0] if "blue_cnt" in z.files else np.zeros((T, 1), int)
+    nr = meta.get("red_action_names", []); nb = meta.get("blue_action_names", []); m = meta.get("metrics", {})
+    t = step if step is not None else min(T - 1, int(T * 0.7))
+
+    fig = plt.figure(figsize=(12, 6)); gs = fig.add_gridspec(2, 2, width_ratios=[1.3, 1])
+    ax = fig.add_subplot(gs[:, 0])
+    for e in range(n):
+        x, y = pt[t, e]; c = "#e14637" if ro[t, e] else "#4682eb"
+        ax.scatter(x, y, c=c, marker="^" if types[e] == "uav" else "s", s=90, zorder=3)
+        if lgps[t, e]:
+            rx, ry = np.clip(pr[t, e], 0, grid)
+            ax.annotate("", xy=(rx, ry), xytext=(x, y),
+                        arrowprops=dict(arrowstyle="->", color="#ffa500", lw=1.6))
+        if ljam[t, e]:
+            ax.scatter(x, y, facecolors="none", edgecolors="#b45ad2", s=240, lw=2)
+        if det[t, e]:
+            ax.scatter(x, y, facecolors="none", edgecolors="#ffe63c", s=340, lw=1.2)
+    ax.set(xlim=(0, grid), ylim=(0, grid), aspect="equal", title=f"fleet map — step {t}/{T - 1}")
+    ax.grid(alpha=.2)
+
+    axs = fig.add_subplot(gs[0, 1])
+    axs.plot(d_t[:t + 1], color="#4682eb", label="defense D_t")
+    axs.plot(a_t[:t + 1], color="#e14637", label="attack A_t")
+    axs.set(ylim=(0, 1), xlim=(0, T - 1), title="score over time"); axs.legend(fontsize=8); axs.grid(alpha=.3)
+
+    def top(row, names):
+        order = np.argsort(row)[::-1]
+        return ", ".join(f"{names[i] if i < len(names) else i}x{int(row[i])}"
+                         for i in order[:3] if row[i] > 0) or "-"
+    axt = fig.add_subplot(gs[1, 1]); axt.axis("off")
+    lines = [f"red={meta.get('red_type')}   blue={meta.get('blue_type')}",
+             f"episode  A={m.get('attack_score')}  D={m.get('defense_score')}  avail={m.get('availability')}",
+             f"step {t}:  A_t={round(float(a_t[t]),2)}  D_t={round(float(d_t[t]),2)}",
+             "", "tactic log (this step):",
+             f" RED : {nr[ra[t]] if ra[t] < len(nr) else ra[t]}  [{top(rc[t], nr)}]",
+             f" BLUE: {nb[ba[t]] if ba[t] < len(nb) else ba[t]}  [{top(bc[t], nb)}]"]
+    axt.text(0, 1, "\n".join(lines), va="top", family="monospace", fontsize=9.5)
+    fig.suptitle(f"Dashboard preview — {cfg['name']}  ({meta.get('red_type')} vs {meta.get('blue_type')})")
+    out = os.path.join(run_dir, "dashboard_preview.png")
+    fig.tight_layout(); fig.savefig(out, dpi=115, bbox_inches="tight"); plt.close(fig)
+    print(f"preview -> {out}")
+    return out
+
+
 if __name__ == "__main__":
-    build_dashboard(sys.argv[1])
+    args = [a for a in sys.argv[1:] if not a.startswith("--")]
+    if "--png" in sys.argv:
+        preview_png(args[0])
+    else:
+        build_dashboard(args[0])

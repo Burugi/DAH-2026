@@ -1,7 +1,7 @@
 """Run one matchup: a red agent type vs a blue agent type on the DroneSwarm sim.
 
-    python run.py configs/scenario_combined.yaml --red rule --blue rule
-    python run.py configs/sweep.yaml --red llm --blue rl
+    python run.py configs/sweep.yaml --red rule --blue rule
+    python run.py configs/sweep.yaml --red llm --blue rl --scenario A1
 
 red/blue type each in {rule, llm, rl} (see brains.py). Writes results/<run_id>/
 with log.csv (long format), arrays.npz and meta.json. The 3x3 comparison lives

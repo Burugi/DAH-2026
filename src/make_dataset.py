@@ -1,6 +1,6 @@
 """Bulk synthetic telemetry dataset for detector training (no sim, so it scales).
 
-    python make_dataset.py configs/scenario_combined.yaml --seeds 50 --out data/combined.csv
+    python make_dataset.py configs/sweep.yaml --seeds 50 --out data/synth.csv
 
 One CSV row per (seed, step, entity) with telemetry and jam/gps ground-truth labels.
 Use it to train/evaluate anomaly detectors offline, or to augment with more seeds.
