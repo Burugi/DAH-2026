@@ -1,0 +1,41 @@
+id: A4
+name: satcom_mitm_replay_attack
+
+description: >
+  Attacker intercepts the satellite C2 link and replays previously captured
+  valid command frames during handover or link-dropout windows, causing drones
+  to execute stale or adversarially chosen commands without operator awareness.
+
+mitre_attack:
+  - T1557   # Adversary-in-the-Middle
+  - T1499   # Endpoint Denial of Service (link integrity denial)
+  - T1565   # Data Manipulation (replayed command injection)
+
+attacks:
+  # Handover dropout: SATCOM link cut during handover window
+  - type: link_drop
+    targets: [0, 1, 2, 3, 4, 5]
+    t: [10, 14]
+    floor: 0.5   # SNR floored near zero → link_up=0
+
+  # Replay window: link restored but attacker injects stale commands → position drift
+  - type: gps_spoof
+    targets: [0, 1, 2]
+    t: [14, 28]
+    drift: 1.4   # replayed stale waypoints cause progressive position error
+
+  # Second dropout (periodic handover pattern)
+  - type: link_drop
+    targets: [0, 1, 2, 3, 4, 5]
+    t: [28, 32]
+    floor: 0.5
+
+red_hint: [9, 5, 10]   # BlockComms, SeizeControl, Persist
+
+defense:
+  detector: threshold
+  snr_thresh: 5.0       # satellite link SNR fluctuation is the nearest proxy signal
+  gps_thresh: 8.0
+  canary_recall: 0.60
+  canary_fp: 0.10       # handover dropouts mimic attack signature → high FP
+  response: isolate

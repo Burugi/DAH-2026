@@ -1,0 +1,27 @@
+id: A11
+name: adversarial_ml_defense_evasion
+
+description: >
+  Attacker crafts adversarial telemetry inputs that remain within normal
+  operational bounds but are specifically optimised to cause the ML-based
+  anomaly detector to output false negatives, effectively blinding the
+  defense AI while the attack proceeds undetected.
+
+mitre_attack:
+  - T1562   # Impair Defenses (blind anomaly detector via adversarial inputs)
+  - T1565   # Data Manipulation (crafted telemetry to fool classifier)
+  - T1036   # Masquerading (adversarial inputs mimic benign signatures)
+
+attacks: []   # concept-only: adversarial ML optimisation not modelled in sim
+
+red_hint: [1, 3, 0]    # DiscoverDrones, ExploitRandom, Sleep (stealthy low-action profile)
+
+defense:
+  detector: multisensor
+  snr_thresh: 6.0
+  gps_thresh: 8.0
+  canary_recall: 0.45   # starting recall (degrades further via blind_decay)
+  canary_fp: 0.15
+  detector_blind: true  # activates step-wise recall decay in defense.py
+  blind_decay: 0.015    # recall drops 1.5% per step → ~0 by step 30
+  response: isolate

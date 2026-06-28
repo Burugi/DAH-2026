@@ -24,36 +24,40 @@ from CybORG.Simulator.Actions.ConcreteActions.ControlTraffic import BlockTraffic
 # ---------------------------------------------------------------- catalogs ---
 # (name, mitre tag, description). Index == action id used everywhere.
 RED_CATALOG = [
-    ("Sleep",          "TA0005 Defense Evasion",        "do nothing this step"),
-    ("DiscoverDrones", "T1018 Remote System Discovery", "enumerate visible drones"),
-    ("ExploitNearest", "T1210 Exploit Remote Services", "exploit the closest drone"),
-    ("ExploitRandom",  "T1210 Exploit Remote Services", "exploit a random drone"),
-    ("ExploitFarthest","T1210 Exploit Remote Services", "exploit the farthest drone"),
-    ("SeizeControl",   "T1078 Valid Accounts + T1542 Persist","seize/hold a freshly exploited drone"),
-    ("SpreadWorm",     "T1021 Lateral Movement",        "exploit a neighbour to spread"),
-    ("JamNearest",     "T1498 Network DoS",             "flood/jam the closest drone"),
-    ("JamFarthest",    "T1499 Endpoint DoS",            "flood/jam the farthest drone"),
-    ("BlockComms",     "T1565 Service Stop",            "block a drone's traffic"),
-    ("Persist",        "T1542 Firmware/Boot Persistence","re-assert control over an owned drone"),
+    ("Sleep",           "TA0005 Defense Evasion",                 "do nothing this step"),
+    ("DiscoverDrones",  "T1018 Remote System Discovery",          "enumerate visible drones"),
+    ("ExploitNearest",  "T1210 Exploit Remote Services",          "exploit the closest drone"),
+    ("ExploitRandom",   "T1210 Exploit Remote Services",          "exploit a random drone"),
+    ("ExploitFarthest", "T1210 Exploit Remote Services",          "exploit the farthest drone"),
+    ("SeizeControl",    "T1078 Valid Accounts + T1542 Persist",   "seize/hold a freshly exploited drone"),
+    ("SpreadWorm",      "T1021 Lateral Movement",                 "exploit a neighbour to spread"),
+    ("JamNearest",      "T1498 Network DoS",                      "flood/jam the closest drone"),
+    ("JamFarthest",     "T1499 Endpoint DoS",                     "flood/jam the farthest drone"),
+    ("BlockComms",      "T1565 Service Stop",                     "block a drone's traffic"),
+    ("Persist",         "T1542 Firmware/Boot Persistence",        "re-assert control over an owned drone"),
+    # Extended entries (ids 11-13) — added for new scenario coverage
+    ("TargetLeader",    "T1078 Valid Accounts",                   "exploit drone_0 (swarm leader) directly"),
+    ("ExploitKnown",    "T1210 Exploit Remote Services",          "exploit a pre-identified vulnerable drone"),
+    ("FloodAll",        "T1498 Network DoS",                      "flood all visible drones simultaneously"),
 ]
 
 # 0-8 are blue decisions an agent picks each step.
 # 9-12 are passive telemetry defences enabled via the scenario `defense` block
 # and scored by defense.py (kept here for a complete, MITRE-mapped catalog).
 BLUE_CATALOG = [
-    ("Sleep",            "—",                                "do nothing this step"),
-    ("Monitor",          "D3FEND Network Traffic Analysis",  "observe events (no state change)"),
-    ("Analyse",          "D3FEND Process/File Analysis",     "inspect sessions on own drone"),
-    ("RemoveSessions",   "D3FEND Process Termination/M1018", "kill red sessions on own drone"),
-    ("RetakeSuspicious", "D3FEND Re-image (Restore)",        "retake a compromised drone"),
-    ("RetakeRandom",     "D3FEND Re-image (Restore)",        "retake a random drone"),
-    ("BlockSuspicious",  "D3FEND Network Isolation/M1037",   "block a compromised drone"),
-    ("AllowTraffic",     "connectivity restore",             "re-allow blocked traffic"),
+    ("Sleep",            "—",                                 "do nothing this step"),
+    ("Monitor",          "D3FEND Network Traffic Analysis",   "observe events (no state change)"),
+    ("Analyse",          "D3FEND Process/File Analysis",      "inspect sessions on own drone"),
+    ("RemoveSessions",   "D3FEND Process Termination/M1018",  "kill red sessions on own drone"),
+    ("RetakeSuspicious", "D3FEND Re-image (Restore)",         "retake a compromised drone"),
+    ("RetakeRandom",     "D3FEND Re-image (Restore)",         "retake a random drone"),
+    ("BlockSuspicious",  "D3FEND Network Isolation/M1037",    "block a compromised drone"),
+    ("AllowTraffic",     "connectivity restore",              "re-allow blocked traffic"),
     ("DeployDecoy",      "D3FEND Decoy Service (deception)",  "plant a honeypot/decoy (CC2-winning tactic)"),
-    ("DetectJam",        "D3FEND Signal/Anomaly Detection",  "[passive] SNR-threshold jam detector"),
-    ("DetectGPS",        "D3FEND Sensor Cross-Validation",   "[passive] IMU cross-check GPS detector"),
-    ("SafeMode",         "D3FEND Restore (position)",        "[passive] correct spoofed position"),
-    ("Isolate",          "D3FEND Network Isolation",         "[passive] isolate flagged entity"),
+    ("DetectJam",        "D3FEND Signal/Anomaly Detection",   "[passive] SNR-threshold jam detector"),
+    ("DetectGPS",        "D3FEND Sensor Cross-Validation",    "[passive] IMU cross-check GPS detector"),
+    ("SafeMode",         "D3FEND Restore (position)",         "[passive] correct spoofed position"),
+    ("Isolate",          "D3FEND Network Isolation",          "[passive] isolate flagged entity"),
 ]
 
 RED_N = len(RED_CATALOG)                 # red decisions
@@ -147,6 +151,18 @@ def make_red_action(aid, obs, name, mem, np_random):
         if held is not None:
             return SeizeControl(ip_address=held, agent=name, session=0), 10
         return Sleep(), 0
+    if aid == 11 and targets:                                 # TargetLeader (A17)
+        # Always targets drone_0's IP (swarm leader); falls back to nearest
+        leader_ip = mem.get("leader_ip") or _pick_by_distance(obs, name, farthest=False)
+        return exploit(leader_ip), 11
+    if aid == 12 and targets:                                 # ExploitKnown (A12)
+        # Exploit a pre-identified IP stored in mem by key-extract pre-compromise
+        known = mem.get("known_target") or (targets[0] if targets else None)
+        if known:
+            return exploit(known), 12
+        return Sleep(), 0
+    if aid == 13 and targets:                                 # FloodAll (multi-target jam)
+        return FloodBandwidth(ip_address=targets[0], agent=name, session=0), 13
     return Sleep(), 0                                         # fallback
 
 

@@ -1,0 +1,28 @@
+id: A21
+name: vlm_vla_prompt_injection_cognitive_hijack
+
+description: >
+  Attacker embeds adversarial instructions into ISR imagery or scene data
+  consumed by a VLM/VLA (Vision-Language-Action) model used for autonomous
+  target recognition or mission planning; the hidden cross-modal prompt
+  overrides the model's alignment and causes it to misclassify targets,
+  suppress threat reports, or execute attacker-specified actions.
+
+mitre_attack:
+  - T1565   # Data Manipulation (adversarial visual prompt in scene data)
+  - T1562   # Impair Defenses (alignment bypass disables threat reporting)
+  - T1036   # Masquerading (injected command mimics legitimate VLM output)
+
+attacks: []   # concept-only: VLM inference pipeline not modelled in fleet.py
+
+red_hint: [0, 1]       # Sleep, DiscoverDrones (passive observation; VLM does the damage)
+
+defense:
+  detector: multisensor
+  snr_thresh: 6.0
+  gps_thresh: 8.0
+  canary_recall: 0.25
+  canary_fp: 0.03
+  detector_corrupt_targets: [0, 1, 2, 3]   # drones whose ISR feeds are injected
+  detector_corrupt_prob: 0.55              # 55% of det_comp outputs flipped on those drones
+  response: none

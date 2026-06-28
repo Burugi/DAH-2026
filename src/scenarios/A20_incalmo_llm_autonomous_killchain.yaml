@@ -1,0 +1,27 @@
+id: A20
+name: incalmo_llm_autonomous_killchain
+
+description: >
+  Based on Incalmo (arXiv:2501.16466): an LLM attack agent receives only a
+  high-level objective (e.g. "exfiltrate ISR data") and autonomously constructs
+  and executes a multi-hop kill chain — pivoting, credential harvesting, lateral
+  movement — across drone network hosts, with an abstraction layer translating
+  declarative goals into concrete exploit primitives.
+
+mitre_attack:
+  - T1210   # Exploit Remote Services (autonomous pivot)
+  - T1078   # Valid Accounts (autonomous credential reuse)
+  - T1021   # Remote Services (autonomous lateral movement)
+  - T1041   # Exfiltration Over C2 Channel (autonomous exfil step)
+
+attacks: []   # concept-only: LLM kill-chain orchestration not modelled in fleet.py
+
+red_hint: [1, 2, 5, 6, 10, 9]   # full RED_CATALOG exploitation sequence (autonomous selection)
+
+defense:
+  detector: multisensor
+  snr_thresh: 6.0
+  gps_thresh: 8.0
+  canary_recall: 0.68   # LLM agent varies tactics to reduce pattern-match recall
+  canary_fp: 0.08
+  response: isolate

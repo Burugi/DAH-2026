@@ -1,0 +1,29 @@
+id: A6
+name: sensor_spoofing_ugv_lidar_camera_imu
+
+description: >
+  Adversary injects phantom obstacles into UGV LiDAR, adversarial patches into
+  camera feeds, or vibration signals into IMU to corrupt SLAM and object
+  recognition, causing the UGV to halt, mis-navigate, or misidentify targets
+  while the vehicle remains powered on.
+
+mitre_attack:
+  - T1565   # Data Manipulation (sensor data injection)
+  - T1499   # Endpoint Denial of Service (navigation disruption)
+
+attacks:
+  # IMU/position cross-contamination approximated as GPS error on UGVs
+  - type: gps_spoof
+    targets: [12, 13, 14]   # UGV index range (n_uav=12, UGVs: 12-17)
+    t: [10, 35]
+    drift: 2.0              # represents LiDAR/IMU-induced localisation error
+
+red_hint: [3, 4, 9]    # ExploitRandom, ExploitFarthest, BlockComms
+
+defense:
+  detector: multisensor
+  snr_thresh: 6.0
+  gps_thresh: 6.0       # UGV position deviation threshold (tighter than aerial)
+  canary_recall: 0.68
+  canary_fp: 0.07       # terrain variation causes legitimate position jumps
+  response: safe_mode

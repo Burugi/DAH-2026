@@ -1,0 +1,58 @@
+id: A1
+name: supply_chain_firmware_trojan_swarm_worm
+
+description: >
+  Firmware trojan pre-installed at supply chain level lies dormant until a
+  trigger step, then activates on seed drones and spreads laterally across
+  the MANET mesh. Infected drones inject false GPS telemetry while maintaining
+  normal heartbeat to delay blue response.
+
+mitre_attack:
+  - T1195   # Supply Chain Compromise
+  - T1542   # Pre-OS Boot / Firmware Persistence
+  - T1018   # Remote System Discovery
+  - T1021   # Remote Services (lateral movement via MANET)
+  - T1565   # Data Manipulation (false telemetry)
+
+attacks:
+  # Wave 1: seed nodes activate and inject false telemetry (dormancy ends step 12)
+  - type: gps_spoof
+    targets: [0, 1]
+    t: [12, 40]
+    drift: 1.2          # slow drift stays below gps_thresh for ~6 steps
+
+  # Wave 2: second-hop infections via proximity spread
+  - type: gps_spoof
+    targets: [2, 3, 4]
+    t: [20, 40]
+    drift: 1.8
+
+  # Wave 3: third-hop spread
+  - type: gps_spoof
+    targets: [5, 6]
+    t: [28, 40]
+    drift: 2.4
+
+  # Bandwidth burst during worm transfer; drop stays above link_up threshold
+  - type: jam
+    targets: [0, 1, 2, 3, 4]
+    t: [18, 26]
+    drop: 7.0
+
+red_hint: [1, 2, 5, 6, 10]   # DiscoverDrones, ExploitNearest, SeizeControl, SpreadWorm, Persist
+
+worm:
+  dormancy_steps: 12
+  seed_drones: [0, 1]
+  spread_mode: proximity
+  spread_interval: 4
+  max_infected: 7
+  stealth: true
+
+defense:
+  detector: multisensor
+  snr_thresh: 4.5
+  gps_thresh: 5.0
+  canary_recall: 0.72
+  canary_fp: 0.06
+  response: safe_mode

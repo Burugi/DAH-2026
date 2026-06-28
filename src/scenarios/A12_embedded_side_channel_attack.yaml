@@ -1,0 +1,29 @@
+id: A12
+name: embedded_side_channel_attack
+
+description: >
+  Attacker with physical or close-proximity access to a captured or
+  maintenance-accessible drone uses power analysis, timing measurements,
+  or voltage glitching to extract cryptographic keys or firmware secrets,
+  enabling subsequent impersonation or persistent backdoor installation.
+
+mitre_attack:
+  - T1552   # Unsecured Credentials (key extraction via power analysis)
+  - T1542   # Pre-OS Boot / Firmware (glitch attack to bypass secure boot)
+  - T1600   # Weaken Encryption (extracted key enables traffic decryption)
+
+attacks: []   # concept-only: hardware side-channel not simulatable in fleet.py
+
+pre_compromise:
+  drones: [0]           # attacker extracted keys from drone 0 during maintenance
+  reason: "key extraction gives immediate session access without exploit step"
+
+red_hint: [5, 10]      # SeizeControl, Persist (post-extraction persistence)
+
+defense:
+  detector: none        # side-channel is pre-deployment; runtime detection not applicable
+  snr_thresh: 6.0
+  gps_thresh: 8.0
+  canary_recall: 0.30   # runtime canary cannot observe hardware-layer extraction
+  canary_fp: 0.03
+  response: none
