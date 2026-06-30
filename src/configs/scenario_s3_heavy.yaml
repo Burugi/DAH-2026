@@ -1,0 +1,40 @@
+# Scenario S3 — Heavy Attack
+# 공격자 5명 시작, 높은 확산률, 강한 합성 공격
+name: s3_heavy
+env: B
+fleet: {n_uav: 12, n_ugv: 6, grid: 100, max_link: 40}
+steps: 40
+seeds: [0, 1, 2, 3, 4]
+
+red_types:  [rule]
+blue_types:
+  - rule
+  - llm
+  - rl
+  - react_k2
+  - react
+  - react_k10
+  - reflect_r4
+  - reflect
+  - reflect_r12
+  - plan_t20
+  - plan
+  - plan_t65
+  - ooda_w3
+  - ooda
+  - ooda_w8
+
+sim:
+  starting_num_red: 5       # 기본(3)보다 많음
+  red_spawn_rate: 0.35      # 기본(0.20)보다 높음
+  max_length_data_links: 40
+
+defense:
+  detector: multisensor
+  snr_thresh: 6
+  gps_thresh: 8
+  response: safe_mode
+
+attacks:
+  - {type: jam,       targets: [0, 1, 2, 3, 4, 5], t: [5, 30],  drop: 28}  # 강한 재밍
+  - {type: gps_spoof, targets: [12, 13, 14],        t: [8, 38],  drift: 4.5} # 강한 GPS

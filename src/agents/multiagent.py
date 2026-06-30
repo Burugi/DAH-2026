@@ -547,11 +547,31 @@ class OODABlue(BlueBrainBase):
 
 # ══════════════════════════════════════════════════════════════ Registry ══════
 
-BLUE_MULTIAGENT_TYPES: dict[str, type[BlueBrainBase]] = {
-    "react":   ReActBlue,
-    "reflect": ReflectBlue,
-    "plan":    PlannerBlue,
-    "ooda":    OODABlue,
+# ── Variant registry (lambdas so parameters are embedded in the key name) ──────
+#
+# Naming convention:
+#   react_k<N>    – history window N steps
+#   reflect_r<N>  – reflect every N steps
+#   plan_t<N>     – re-plan when compromise fraction > 0.N
+#   ooda_w<N>     – trend window N steps
+
+BLUE_MULTIAGENT_TYPES: dict[str, object] = {
+    # ── ReAct: history window ─────────────────────────────────────────────
+    "react_k2":    lambda n: ReActBlue(n, history_k=2),
+    "react":       lambda n: ReActBlue(n, history_k=5),      # default
+    "react_k10":   lambda n: ReActBlue(n, history_k=10),
+    # ── Reflect: reflection period ────────────────────────────────────────
+    "reflect_r4":  lambda n: ReflectBlue(n, reflect_every=4),
+    "reflect":     lambda n: ReflectBlue(n, reflect_every=8), # default
+    "reflect_r12": lambda n: ReflectBlue(n, reflect_every=12),
+    # ── Plan: re-plan threshold ───────────────────────────────────────────
+    "plan_t20":    lambda n: PlannerBlue(n, replan_threshold=0.20),
+    "plan":        lambda n: PlannerBlue(n, replan_threshold=0.45), # default
+    "plan_t65":    lambda n: PlannerBlue(n, replan_threshold=0.65),
+    # ── OODA: trend window ────────────────────────────────────────────────
+    "ooda_w3":     lambda n: OODABlue(n, window=3),
+    "ooda":        lambda n: OODABlue(n, window=5),           # default
+    "ooda_w8":     lambda n: OODABlue(n, window=8),
 }
 
 ALL_BLUE_TYPES = ["rule", "llm", "rl"] + list(BLUE_MULTIAGENT_TYPES)

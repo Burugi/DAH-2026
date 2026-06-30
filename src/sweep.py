@@ -121,6 +121,8 @@ def main():
         description="Run 3x3 red-vs-blue sweep, optionally across multiple scenarios.")
     ap.add_argument("config", nargs="?", default=os.path.join(SRC, "configs", "sweep.yaml"))
     ap.add_argument("--seeds", type=int, help="override: use seeds 0..N-1")
+    ap.add_argument("--seed-offset", type=int, default=0,
+                    help="add this offset to every seed (for repeated runs)")
     ap.add_argument("--steps", type=int, help="override episode length")
     ap.add_argument("--episodes", type=int, default=200, help="rl training episodes")
     ap.add_argument("--fresh", action="store_true", help="retrain rl even if cached")
@@ -133,6 +135,8 @@ def main():
     cfg_base = yaml.safe_load(open(a.config, encoding="utf-8"))
     if a.seeds:
         cfg_base["seeds"] = list(range(a.seeds))
+    if a.seed_offset:
+        cfg_base["seeds"] = [s + a.seed_offset for s in cfg_base["seeds"]]
     if a.steps:
         cfg_base["steps"] = a.steps
     reds  = cfg_base.get("red_types",  ["rule", "llm", "rl"])
