@@ -24,8 +24,8 @@ from viz import plot, render, dashboard, score
 from agents.brains import use_rl
 from agents.rl import ensure_trained
 
-SUMMARY_COLS = ["red_type", "blue_type", "attack_score", "defense_score", "availability",
-                "final_compromise", "peak_compromise",
+SUMMARY_COLS = ["red_type", "blue_type", "attack_score", "defense_score", "D_mult",
+                "availability", "final_compromise", "peak_compromise",
                 "time_to_first_compromise", "compromise_auc", "blue_reward_total",
                 "recovered", "comp_F1", "jam_F1", "gps_F1",
                 "link_drop_F1", "snr_poison_F1", "bw_drain_F1",

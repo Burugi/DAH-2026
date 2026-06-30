@@ -1,0 +1,35 @@
+# 전체 시나리오 포괄 sweep (A01-A21 + A_CONN + A_MV = 23종)
+#
+# 사용법:
+#   python src/sweep.py src/configs/sweep_all_scenarios.yaml \
+#     --scenarios A1,A2,A3,A4,A5,A6,A7,A8,A9,A10,A11,A12,A13,A14,A15,A16,A17,A18,A19,A20,A21,A_CONN,A_MV \
+#     --no-gif
+#
+# 시간 단축이 필요하면 --scenarios A1,A7,A14,A17,A_CONN,A_MV 만 실행 권장.
+name: all_scenarios
+env: B
+fleet: {n_uav: 12, n_ugv: 6, grid: 100, max_link: 40}
+steps: 40
+seeds: [0, 1, 2, 3, 4]
+
+red_types: [rule]
+
+blue_types:
+  - rule
+  - llm
+  - rl
+  - react
+  - reflect
+  - plan
+  - ooda
+
+sim:
+  starting_num_red: 3
+  red_spawn_rate: 0.20
+  max_length_data_links: 40
+
+defense:
+  detector: multisensor
+  snr_thresh: 6
+  gps_thresh: 8
+  response: safe_mode

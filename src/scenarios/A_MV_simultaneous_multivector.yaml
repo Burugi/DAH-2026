@@ -1,0 +1,37 @@
+id: A_MV
+name: A_MV_simultaneous_multivector
+
+description: >
+  동시 멀티벡터 공격 (W+J+B). 웜 전파(Worm), 광범위 재밍(Jam), 트래픽 차단
+  (BlockComms)을 동시에 구사한다. 점령은 막아도 가용성이 별도로 크게 피해를
+  입는다 (PDF: 점령 0.832, 가용성 보상 −125 → −268).
+
+  PDF 분류: 🟢점령 + 🟠가용성 복합 (A-MV는 점령 0.832지만 가용성 별도 피해)
+
+mitre_attack:
+  - T1021   # Lateral Movement — worm spread
+  - T1498   # Network DoS — broad jamming
+  - T1565   # Service Stop — block comms
+
+attacks:
+  # Phase 1 (전체): 광범위 재밍으로 링크 저하
+  - type: jam
+    targets: [0, 1, 2, 3, 4]
+    t: [1, 40]
+    drop: 25.0
+
+  # Phase 2 (후반): GPS 스푸핑 추가로 위치 교란
+  - type: gps_spoof
+    targets: [12, 13, 14]
+    t: [8, 40]
+    drift: 4.5
+
+red_hint: [3, 6, 9]      # ExploitRandom(3), SpreadWorm(6), BlockComms(9)
+
+defense:
+  detector: multisensor
+  snr_thresh: 6.0
+  gps_thresh: 6.0
+  canary_recall: 0.78
+  canary_fp: 0.06
+  response: safe_mode

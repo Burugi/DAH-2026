@@ -27,8 +27,11 @@ def episode_scores(metrics, red_owned_all, link_up_all, steps):
     fc, cauc, cf1 = metrics["final_compromise"], metrics["compromise_auc"], metrics["comp_F1"]
     A = float(np.mean([fc, cauc, 1 - ttf_norm, 1 - cf1]))
     D = float(np.mean([1 - fc, 1 - cauc, cf1, V]))
+    # 곱셈종합 = D_core × availability (대회식: 가용성=0이면 전체=0)
+    D_core = float(np.mean([1 - fc, 1 - cauc, cf1]))
+    D_mult = round(D_core * V, 3)
     return {"attack_score": round(A, 3), "defense_score": round(D, 3),
-            "availability": round(V, 3)}
+            "availability": round(V, 3), "D_mult": D_mult}
 
 
 def per_step(red_owned, link_up):

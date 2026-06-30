@@ -1,0 +1,30 @@
+id: A_CONN
+name: A_CONN_hub_partition
+
+description: >
+  최적 허브·절단점 분할 공격 (K=4). 군집에서 연결성이 가장 높은 허브 드론 4대를
+  에피소드 전체 동안 완전 재밍하여 네트워크를 분할한다. 점령 없이 가용성만으로
+  임무를 마비시키는 연결성 클래스 최대 위협 시나리오 (PDF 곱셈 0.374, 1위 위협).
+
+  PDF 분류: 🔴연결성 클래스 (코디네이터 곱셈종합 0.416 → 통합방어 0.509)
+
+mitre_attack:
+  - T1498   # Network Denial of Service — RF jamming
+  - T1565   # Service Stop — hub isolation
+
+attacks:
+  # 허브 UAV 4대 동시 완전 재밍 — SNR을 임계값(6dB) 훨씬 아래로 떨어뜨림
+  - type: jam
+    targets: [0, 1, 2, 3]
+    t: [1, 40]
+    drop: 40.0           # 극단 SNR 저하 → 링크 완전 차단, relay 불가
+
+red_hint: [9, 13, 7]     # BlockComms(9), FloodAll(13), JamNearest(7)
+
+defense:
+  detector: multisensor
+  snr_thresh: 6.0
+  gps_thresh: 8.0
+  canary_recall: 0.75
+  canary_fp: 0.05
+  response: safe_mode
