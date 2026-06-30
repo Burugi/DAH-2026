@@ -20,6 +20,7 @@ from sim.defense import run_defense
 from agents.actions import make_blue_index, RED_N, BLUE_DECISION_N, RED_CATALOG, BLUE_CATALOG
 from agents import brains
 from agents.brains import RED_BRAINS, blue_decide, use_rl
+from agents.multiagent import BLUE_MULTIAGENT_TYPES
 from viz import score
 
 from CybORG import CybORG, CYBORG_VERSION
@@ -141,6 +142,11 @@ def rollout(cfg, seed, red_type="rule", blue_type="rule"):
     red_log, blue_log = [], []           # per-step (rep_id, count_vector) for the dashboard
     brains.pop_red_actlog()              # clear any leftovers from env.reset()
 
+    # ── Stateful multi-agent blue brain (react / reflect / plan / ooda) ──────
+    blue_brain = None
+    if blue_type in BLUE_MULTIAGENT_TYPES:
+        blue_brain = BLUE_MULTIAGENT_TYPES[blue_type](n)
+
     # ── Pre-compromise: insider / side-channel / leader-takeover (A12/A15/A17) ──
     scenario = cfg.get("_scenario") or {}
     pre_comp = scenario.get("pre_compromise", {})
@@ -170,18 +176,33 @@ def rollout(cfg, seed, red_type="rule", blue_type="rule"):
 
         ctx = {"compromised": owned, "ip_to_drone": ip_to_drone, "n": n}
         live = [a for a in env.active_agents if a in env.agent_actions]
-        blue_aids = [blue_decide(blue_type, env, a, ctx) for a in live]
+
+        # ── Blue decision: stateful brain (one team action) or per-agent ─────
+        if blue_brain is not None:
+            team_aid = blue_brain.step_decide(ctx)
+            blue_aids = [team_aid] * len(live)
+        else:
+            blue_aids = [blue_decide(blue_type, env, a, ctx) for a in live]
+
         acts = {a: make_blue_index(aid, env, a, ctx) for a, aid in zip(live, blue_aids)}
         _, rew, done, _ = env.step(acts)
         blue_log.append(_summ(blue_aids, BLUE_DECISION_N))
         red_log.append(_summ(brains.pop_red_actlog(), RED_N))
-        reward[t] = float(np.mean(list(rew.values()))) if rew else 0.0
+        step_reward = float(np.mean(list(rew.values()))) if rew else 0.0
+        reward[t] = step_reward
+
+        if blue_brain is not None:
+            blue_brain.step_end(blue_aids[0] if blue_aids else 0, step_reward, ctx)
+
         for d in compromised_drones(cyborg, n):
             red_owned[t, d] = 1
         if all(done.values()):
             reward, red_owned = reward[:t + 1], red_owned[:t + 1]
             truncate(fleet, t + 1)
             break
+
+    if blue_brain is not None:
+        blue_brain.episode_end()
     T = len(reward)
     a_t, d_t = score.per_step(red_owned, fleet["link_up"][:T])
     defence = run_defense(cfg, fleet, seed, red_owned)
