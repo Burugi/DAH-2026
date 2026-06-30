@@ -23,6 +23,9 @@ blue_types:
   - reflect
   - plan
   - ooda
+  - hier
+  - hier_h2
+  - hier_h6
 
 sim:
   starting_num_red: 3

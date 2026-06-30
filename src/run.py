@@ -174,12 +174,19 @@ def rollout(cfg, seed, red_type="rule", blue_type="rule"):
         # ── Worm propagation engine (A1, A9, A14, A17) ──────────────────────
         _worm_step(t, cfg, cyborg, ip_to_drone, owned, rng_worm)
 
-        ctx = {"compromised": owned, "ip_to_drone": ip_to_drone, "n": n}
+        # Fleet telemetry at step t — passed to hierarchical brain for hub/jam detection
+        link_t = fleet["link_up"][t] if t < len(fleet["link_up"]) else None
+        snr_t  = fleet["snr"][t]     if t < len(fleet["snr"])     else None
+        gps_t  = fleet["gps_err"][t] if t < len(fleet["gps_err"]) else None
+        ctx = {"compromised": owned, "ip_to_drone": ip_to_drone, "n": n,
+               "link_up": link_t, "snr": snr_t, "gps_err": gps_t}
         live = [a for a in env.active_agents if a in env.agent_actions]
 
-        # ── Blue decision: stateful brain (one team action) or per-agent ─────
-        if blue_brain is not None:
-            team_aid = blue_brain.step_decide(ctx)
+        # ── Blue decision: hierarchical (per-drone), stateful brain, or per-agent ─
+        if blue_brain is not None and hasattr(blue_brain, "team_decide"):
+            blue_aids = blue_brain.team_decide(ctx, live)
+        elif blue_brain is not None:
+            team_aid  = blue_brain.step_decide(ctx)
             blue_aids = [team_aid] * len(live)
         else:
             blue_aids = [blue_decide(blue_type, env, a, ctx) for a in live]
