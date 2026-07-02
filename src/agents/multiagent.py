@@ -472,7 +472,7 @@ class OODABlue(BlueBrainBase):
 
 
 # ══════════════════════════════════════════════════════════════ Registry ══════
-from agents.hierarchical import HierarchicalBlue   # noqa: E402 (after subclass defs)
+from agents.hierarchical import HierarchicalBlue, HierNoStance, HierNoTrigger   # noqa: E402
 
 # ── Variant registry (lambdas so parameters are embedded in the key name) ──────
 #
@@ -500,9 +500,12 @@ BLUE_MULTIAGENT_TYPES: dict[str, object] = {
     "ooda":        lambda n: OODABlue(n, window=5),           # default
     "ooda_w8":     lambda n: OODABlue(n, window=8),
     # ── Hierarchical Hybrid Swarm Defense (Claude commander) ─────────────
-    "hier":        lambda n: HierarchicalBlue(n, n_hubs=4, llm_budget=5),
-    "hier_h2":     lambda n: HierarchicalBlue(n, n_hubs=2, llm_budget=5),
-    "hier_h6":     lambda n: HierarchicalBlue(n, n_hubs=6, llm_budget=5),
+    "hier":           lambda n: HierarchicalBlue(n, n_hubs=4, llm_budget=5),
+    "hier_h2":        lambda n: HierarchicalBlue(n, n_hubs=2, llm_budget=5),
+    "hier_h6":        lambda n: HierarchicalBlue(n, n_hubs=6, llm_budget=5),
+    # ── Ablation variants ─────────────────────────────────────────────────
+    "hier_nostance":  lambda n: HierNoStance(n, n_hubs=2),    # dispatch only, no stance
+    "hier_notrigger": lambda n: HierNoTrigger(n, n_hubs=2),   # stance every step, no event filter
 }
 
 ALL_BLUE_TYPES = ["rule", "llm", "rl"] + list(BLUE_MULTIAGENT_TYPES)

@@ -274,3 +274,35 @@ class HierarchicalBlue(BlueBrainBase):
         super().step_end(aid, reward, ctx)
         self.memory[-1]["stance"]    = self.stance
         self.memory[-1]["llm_calls"] = self.llm_calls
+
+
+# ══════════════════════════════════════════════ Ablation variants ══════════════
+
+class HierNoStance(HierarchicalBlue):
+    """Ablation A: per-drone role dispatch, but stance is always NORMAL.
+
+    Isolates the contribution of per-drone dispatch alone (no stance switching).
+    """
+    def team_decide(self, ctx: dict, agents: list[str]) -> list[int]:
+        self._hub_ids = self._detect_hubs(ctx)
+        self.stance = "NORMAL"          # frozen — never changes
+        self.llm_calls = 0
+        aids = []
+        for agent in agents:
+            drone_id = int(agent.split("_")[-1])
+            role = self._get_role(drone_id, ctx)
+            aids.append(_POLICY.get(("NORMAL", role), 1))
+        return aids
+
+
+class HierNoTrigger(HierarchicalBlue):
+    """Ablation B: per-drone dispatch + stance, updated EVERY step (no event filter).
+
+    Isolates the contribution of event-driven triggering vs. always-on stance update.
+    llm_budget set to episode length so it never runs out.
+    """
+    def __init__(self, n: int, n_hubs: int = 4):
+        super().__init__(n, n_hubs=n_hubs, llm_budget=999)
+
+    def _should_call_llm(self, ctx: dict) -> bool:
+        return True     # update stance every step

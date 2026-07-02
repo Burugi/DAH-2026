@@ -1,0 +1,33 @@
+# Ablation: hier 구성요소별 기여도 분리 실험
+#
+# 비교 대상:
+#   rule           — 베이스라인 (per-drone 없음, stance 없음)
+#   hier_nostance  — per-drone 역할 배분만 (stance 항상 NORMAL)
+#   hier_notrigger — per-drone + stance (매 스텝 갱신, event filter 없음)
+#   hier_h2        — 전체 시스템 (per-drone + event-driven stance)
+#
+# 23 scenarios × 4 agents × 15 seeds = 1,380 episodes
+name: ablation_hier
+env: B
+fleet: {n_uav: 12, n_ugv: 6, grid: 100, max_link: 40}
+steps: 40
+seeds: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14]
+
+red_types: [rule]
+
+blue_types:
+  - rule
+  - hier_nostance
+  - hier_notrigger
+  - hier_h2
+
+sim:
+  starting_num_red: 3
+  red_spawn_rate: 0.20
+  max_length_data_links: 40
+
+defense:
+  detector: multisensor
+  snr_thresh: 6
+  gps_thresh: 8
+  response: safe_mode
