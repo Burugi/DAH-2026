@@ -506,6 +506,13 @@ BLUE_MULTIAGENT_TYPES: dict[str, object] = {
     # ── Ablation variants ─────────────────────────────────────────────────
     "hier_nostance":  lambda n: HierNoStance(n, n_hubs=2),    # dispatch only, no stance
     "hier_notrigger": lambda n: HierNoTrigger(n, n_hubs=2),   # stance every step, no event filter
+    # ── llm_budget variants (hier_h2 기준, n_hubs=2) ──────────────────────
+    "hier_b1":  lambda n: HierarchicalBlue(n, n_hubs=2, llm_budget=1),
+    "hier_b2":  lambda n: HierarchicalBlue(n, n_hubs=2, llm_budget=2),
+    "hier_b3":  lambda n: HierarchicalBlue(n, n_hubs=2, llm_budget=3),
+    "hier_b5":  lambda n: HierarchicalBlue(n, n_hubs=2, llm_budget=5),   # 현재 hier_h2
+    "hier_b8":  lambda n: HierarchicalBlue(n, n_hubs=2, llm_budget=8),
+    "hier_b15": lambda n: HierarchicalBlue(n, n_hubs=2, llm_budget=15),
 }
 
 ALL_BLUE_TYPES = ["rule", "llm", "rl"] + list(BLUE_MULTIAGENT_TYPES)

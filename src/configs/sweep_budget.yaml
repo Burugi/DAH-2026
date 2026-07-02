@@ -1,0 +1,29 @@
+# llm_budget 튜닝: 에피소드당 LLM 호출 횟수 최적값 탐색
+# 23 scenarios × 6 budget levels × 15 seeds = 2,070 episodes
+name: budget
+env: B
+fleet: {n_uav: 12, n_ugv: 6, grid: 100, max_link: 40}
+steps: 40
+seeds: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14]
+
+red_types: [rule]
+
+blue_types:
+  - rule
+  - hier_b1
+  - hier_b2
+  - hier_b3
+  - hier_b5
+  - hier_b8
+  - hier_b15
+
+sim:
+  starting_num_red: 3
+  red_spawn_rate: 0.20
+  max_length_data_links: 40
+
+defense:
+  detector: multisensor
+  snr_thresh: 6
+  gps_thresh: 8
+  response: safe_mode
