@@ -1,0 +1,39 @@
+# 위협 클래스별 핵심 시나리오 비교
+# PDF 위협 순위 상위 대표 시나리오 4종:
+#   A_CONN : 연결성 단절 (곱셈 0.374) — 최고 위협
+#   A_MV   : 동시 멀티벡터 (0.832)
+#   A7     : RF 재밍 (가용성 0.627)
+#   A1     : 공급망 웜 (점령 0.866) — 기본 점령형
+#
+# 사용법: python src/sweep.py src/configs/sweep_key_scenarios.yaml
+#          --scenarios A_CONN,A7,A1,A_MV --no-gif
+name: key_scenarios
+env: B
+fleet: {n_uav: 12, n_ugv: 6, grid: 100, max_link: 40}
+steps: 40
+seeds: [0, 1, 2, 3, 4]
+
+red_types:  [rule]
+
+blue_types:
+  - rule
+  - llm
+  - rl
+  - react
+  - reflect
+  - plan
+  - ooda
+  - hier
+  - hier_h2
+  - hier_h6
+
+sim:
+  starting_num_red: 3
+  red_spawn_rate: 0.20
+  max_length_data_links: 40
+
+defense:
+  detector: multisensor
+  snr_thresh: 6
+  gps_thresh: 8
+  response: safe_mode

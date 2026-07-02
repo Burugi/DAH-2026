@@ -1,0 +1,47 @@
+# 멀티에이전트 어블레이션 실험
+# 기존 3종 + 멀티에이전트 12종 (파라미터 3변형 × 4 아키텍처) = 15종 blue
+# run_ablation.py 가 --seed-offset 0/5/10/15/20 으로 5회 반복 실행
+name: ablation
+env: B
+fleet: {n_uav: 12, n_ugv: 6, grid: 100, max_link: 40}
+steps: 40
+seeds: [0, 1, 2, 3, 4]     # run_ablation.py가 offset을 추가함
+
+red_types:  [rule]          # 가장 강한 공격자 고정
+
+blue_types:
+  # ── 기존 baseline 3종 ───────────────────────────────────────────────────────
+  - rule
+  - llm
+  - rl
+  # ── ReAct: history window 변형 ─────────────────────────────────────────────
+  - react_k2      # 짧은 컨텍스트 (2 스텝)
+  - react         # 기본 (5 스텝)
+  - react_k10     # 긴 컨텍스트 (10 스텝)
+  # ── Reflect: 반성 주기 변형 ───────────────────────────────────────────────
+  - reflect_r4    # 빠른 반성 (4 스텝마다)
+  - reflect       # 기본 (8 스텝마다)
+  - reflect_r12   # 느린 반성 (12 스텝마다)
+  # ── Plan: 재계획 임계값 변형 ──────────────────────────────────────────────
+  - plan_t20      # 적극적 재계획 (점령률 > 0.20)
+  - plan          # 기본 (점령률 > 0.45)
+  - plan_t65      # 보수적 재계획 (점령률 > 0.65)
+  # ── OODA: 트렌드 윈도우 변형 ─────────────────────────────────────────────
+  - ooda_w3       # 짧은 트렌드 (3 스텝)
+  - ooda          # 기본 (5 스텝)
+  - ooda_w8       # 긴 트렌드 (8 스텝)
+
+sim:
+  starting_num_red: 3
+  red_spawn_rate: 0.20
+  max_length_data_links: 40
+
+defense:
+  detector: multisensor
+  snr_thresh: 6
+  gps_thresh: 8
+  response: safe_mode
+
+attacks:
+  - {type: jam,       targets: [0, 1, 2, 3], t: [10, 25], drop: 22}
+  - {type: gps_spoof, targets: [12, 13],     t: [15, 35], drift: 3.0}

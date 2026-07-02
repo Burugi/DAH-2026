@@ -35,33 +35,37 @@ RED_CATALOG = [
     ("JamFarthest",     "T1499 Endpoint DoS",                     "flood/jam the farthest drone"),
     ("BlockComms",      "T1565 Service Stop",                     "block a drone's traffic"),
     ("Persist",         "T1542 Firmware/Boot Persistence",        "re-assert control over an owned drone"),
-    # Extended entries (ids 11-13) — added for new scenario coverage
     ("TargetLeader",    "T1078 Valid Accounts",                   "exploit drone_0 (swarm leader) directly"),
     ("ExploitKnown",    "T1210 Exploit Remote Services",          "exploit a pre-identified vulnerable drone"),
     ("FloodAll",        "T1498 Network DoS",                      "flood all visible drones simultaneously"),
+    # ID 14: covert synthetic-overlay attack (sensor evasion + availability drain)
+    ("Inject",          "T1565 Data Manipulation + T1499",        "inject false commands via synthetic overlay (covert)"),
 ]
 
-# 0-8 are blue decisions an agent picks each step.
-# 9-12 are passive telemetry defences enabled via the scenario `defense` block
-# and scored by defense.py (kept here for a complete, MITRE-mapped catalog).
+# IDs 0-9  : per-step blue decisions (agent picks one each step)
+# IDs 10-13: passive telemetry defences (enabled via scenario `defense` block,
+#             scored by defense.py — kept here for a MITRE-complete catalog)
 BLUE_CATALOG = [
-    ("Sleep",            "—",                                 "do nothing this step"),
-    ("Monitor",          "D3FEND Network Traffic Analysis",   "observe events (no state change)"),
-    ("Analyse",          "D3FEND Process/File Analysis",      "inspect sessions on own drone"),
-    ("RemoveSessions",   "D3FEND Process Termination/M1018",  "kill red sessions on own drone"),
-    ("RetakeSuspicious", "D3FEND Re-image (Restore)",         "retake a compromised drone"),
-    ("RetakeRandom",     "D3FEND Re-image (Restore)",         "retake a random drone"),
-    ("BlockSuspicious",  "D3FEND Network Isolation/M1037",    "block a compromised drone"),
-    ("AllowTraffic",     "connectivity restore",              "re-allow blocked traffic"),
-    ("DeployDecoy",      "D3FEND Decoy Service (deception)",  "plant a honeypot/decoy (CC2-winning tactic)"),
-    ("DetectJam",        "D3FEND Signal/Anomaly Detection",   "[passive] SNR-threshold jam detector"),
-    ("DetectGPS",        "D3FEND Sensor Cross-Validation",    "[passive] IMU cross-check GPS detector"),
-    ("SafeMode",         "D3FEND Restore (position)",         "[passive] correct spoofed position"),
-    ("Isolate",          "D3FEND Network Isolation",          "[passive] isolate flagged entity"),
+    ("Sleep",            "—",                                          "do nothing this step"),          # 0
+    ("Monitor",          "D3FEND Network Traffic Analysis",            "observe events (no state change)"),  # 1
+    ("Analyse",          "D3FEND Process/File Analysis",               "inspect sessions on own drone"),  # 2
+    ("RemoveSessions",   "D3FEND Process Termination/M1018",           "kill red sessions on own drone"), # 3
+    ("RetakeSuspicious", "D3FEND Re-image (Restore)",                  "retake a compromised drone"),     # 4
+    ("RetakeRandom",     "D3FEND Re-image (Restore)",                  "retake a random drone"),          # 5
+    ("BlockSuspicious",  "D3FEND Network Isolation/M1037",             "block a compromised drone"),      # 6
+    ("AllowTraffic",     "connectivity restore",                       "re-allow blocked traffic"),       # 7
+    ("DeployDecoy",      "D3FEND Decoy Service (deception)",           "plant a honeypot/decoy"),        # 8
+    # ID 9: NEW — active decision: local autonomous safe-mode when central is cut
+    ("Failsafe",         "D3FEND Local Autonomous Defense",            "enter autonomous local defense (remove own sessions + restore links)"),  # 9
+    # IDs 10-13: passive (were 9-12)
+    ("DetectJam",        "D3FEND Signal/Anomaly Detection",            "[passive] SNR-threshold jam detector"),    # 10
+    ("DetectGPS",        "D3FEND Sensor Cross-Validation",             "[passive] IMU cross-check GPS detector"),  # 11
+    ("SafeMode",         "D3FEND Restore (position)",                  "[passive] correct spoofed position"),      # 12
+    ("Isolate",          "D3FEND Network Isolation",                   "[passive] isolate flagged entity"),        # 13
 ]
 
-RED_N = len(RED_CATALOG)                 # red decisions
-BLUE_DECISION_N = 9                      # ids 0-8 are per-step choices
+RED_N = len(RED_CATALOG)                 # 15 red decisions (0-14)
+BLUE_DECISION_N = 10                     # IDs 0-9 are per-step choices (was 9)
 
 
 # ----------------------------------------------------------- obs helpers ---
@@ -163,6 +167,11 @@ def make_red_action(aid, obs, name, mem, np_random):
         return Sleep(), 0
     if aid == 13 and targets:                                 # FloodAll (multi-target jam)
         return FloodBandwidth(ip_address=targets[0], agent=name, session=0), 13
+    if aid == 14 and targets:                                 # Inject (covert synthetic overlay)
+        # CybORG has no native inject primitive; map to covert exploit of random drone.
+        # The synthetic-overlay effect (sensor evasion, availability drain) is tracked
+        # via the fleet telemetry layer separately.
+        return exploit(np_random.choice(targets)), 14
     return Sleep(), 0                                         # fallback
 
 
@@ -185,6 +194,7 @@ def make_blue_index(aid, env, agent, ctx):
     idx = action_index_map(env, agent)
     sleep = idx.get("Sleep", [(0, None)])[0][0]
     comp, ip2d = ctx["compromised"], ctx["ip_to_drone"]
+    own = int(agent.split("_")[-1])
 
     if aid in (0, 1, 2):                                      # Sleep/Monitor/Analyse
         return sleep
@@ -206,6 +216,12 @@ def make_blue_index(aid, env, agent, ctx):
         return idx.get("AllowTraffic", [(sleep, None)])[0][0]
     if aid == 8:                                              # DeployDecoy (deception; no CC3 primitive -> observe)
         return sleep
+    if aid == 9:                                              # Failsafe — local autonomous defense
+        # When central coordination is cut: remove own sessions if compromised,
+        # otherwise restore traffic links.
+        if own in comp:
+            return idx.get("RemoveOtherSessions", [(sleep, None)])[0][0]
+        return idx.get("AllowTraffic", [(sleep, None)])[0][0]
     return sleep
 
 
