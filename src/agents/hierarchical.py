@@ -32,6 +32,7 @@ Stances:
 from __future__ import annotations
 
 import json
+import math
 import re
 from typing import Optional
 
@@ -330,6 +331,75 @@ class HierDropStance(HierarchicalBlue):
         if result["stance"] == self.drop:
             result["stance"] = "NORMAL"
         return result
+
+
+class HierH3(HierarchicalBlue):
+    """동적 역할 배분 (위협 근접도 기반) — dispatch 정밀화.
+
+    ablation 결과 성능 동력은 stance가 아니라 per-drone dispatch였다(+1.6%). hier_h2는
+    모든 healthy non-hub 드론을 일률적으로 'leaf'(RetakeSuspicious)로 처리한다. h3는
+    이를 위협 근접도로 분화한다:
+
+      · guardian  : 위협(점령/재밍 드론) 반경 내 healthy 드론 → 능동 탈환/차단
+      · reserve   : 위협에서 먼 healthy 드론 → Monitor로 보존(행동낭비·공격면 축소)
+
+    허브/점령 드론의 행동은 hier_h2와 동일(stance 기반)하게 유지해, 순수하게 dispatch
+    정밀화의 효과만 분리 측정한다.
+    """
+
+    def __init__(self, n: int, n_hubs: int = 2, llm_budget: int = 5,
+                 guard_radius: Optional[float] = None):
+        super().__init__(n, n_hubs=n_hubs, llm_budget=llm_budget)
+        self.guard_radius = guard_radius   # None → ctx의 max_link 사용
+
+    def _threat_ids(self, ctx: dict) -> set:
+        """점령됐거나 강하게 재밍된(SNR<=6) 드론 = 위협원."""
+        threats = set(ctx["compromised"])
+        snr = ctx.get("snr")
+        if snr is not None:
+            for i in range(self.n):
+                if snr[i] <= 6:
+                    threats.add(i)
+        return threats
+
+    def team_decide(self, ctx: dict, agents: list[str]) -> list[int]:
+        self._hub_ids = self._detect_hubs(ctx)
+        if self._should_call_llm(ctx):
+            result = self._call_commander(self._abstract_state(ctx))
+            self.stance          = result["stance"]
+            self.drone_weights   = result["weights"]
+            self._last_call_comp = len(ctx["compromised"])
+            self._last_call_t    = self.t
+            self.llm_calls      += 1
+
+        comp    = ctx["compromised"]
+        pos     = ctx.get("pos")
+        radius  = self.guard_radius or ctx.get("max_link", 40)
+        threats = self._threat_ids(ctx)
+
+        aids = []
+        for agent in agents:
+            d = int(agent.split("_")[-1])
+            if d in comp:
+                aids.append(_POLICY.get((self.stance, "compromised"), 3))
+                continue
+            if d in self._hub_ids:
+                aids.append(_POLICY.get((self.stance, "hub"), 1))
+                continue
+            if not threats:
+                aids.append(1)                       # 위협 없음 → 감시
+                continue
+            # healthy non-hub: 위협 근접도로 guardian/reserve 분화
+            guardian = True
+            if pos is not None and d < len(pos):
+                dmin = min((math.hypot(pos[d][0] - pos[j][0], pos[d][1] - pos[j][1])
+                            for j in threats if j < len(pos)), default=1e9)
+                guardian = dmin <= radius
+            if guardian:
+                aids.append(_POLICY.get((self.stance, "leaf"), 4))   # 능동 대응
+            else:
+                aids.append(1)                       # reserve → Monitor 보존
+        return aids
 
 
 class HierV2(HierarchicalBlue):

@@ -473,7 +473,7 @@ class OODABlue(BlueBrainBase):
 
 # ══════════════════════════════════════════════════════════════ Registry ══════
 from agents.hierarchical import (HierarchicalBlue, HierNoStance,   # noqa: E402
-                                 HierNoTrigger, HierDropStance, HierV2)
+                                 HierNoTrigger, HierDropStance, HierV2, HierH3)
 
 # ── Variant registry (lambdas so parameters are embedded in the key name) ──────
 #
@@ -521,6 +521,10 @@ BLUE_MULTIAGENT_TYPES: dict[str, object] = {
     "hier_drop_emergency":  lambda n: HierDropStance(n, drop="EMERGENCY"),
     # ── 증거 기반 개선판 (EMERGENCY→CONTAIN, ANTI_WORM 게이팅) ─────────────
     "hier_v2":              lambda n: HierV2(n, n_hubs=2, llm_budget=5),
+    # ── 동적 역할 배분 (위협 근접도 기반 guardian/reserve) ─────────────────
+    "hier_h3":              lambda n: HierH3(n, n_hubs=2, guard_radius=40),
+    "hier_h3_wide":         lambda n: HierH3(n, n_hubs=2, guard_radius=60),
+    "hier_h3_tight":        lambda n: HierH3(n, n_hubs=2, guard_radius=25),
 }
 
 ALL_BLUE_TYPES = ["rule", "llm", "rl"] + list(BLUE_MULTIAGENT_TYPES)

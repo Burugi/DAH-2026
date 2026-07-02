@@ -178,8 +178,10 @@ def rollout(cfg, seed, red_type="rule", blue_type="rule"):
         link_t = fleet["link_up"][t] if t < len(fleet["link_up"]) else None
         snr_t  = fleet["snr"][t]     if t < len(fleet["snr"])     else None
         gps_t  = fleet["gps_err"][t] if t < len(fleet["gps_err"]) else None
+        pos_t  = fleet["pos_rep"][t] if t < len(fleet["pos_rep"]) else None
         ctx = {"compromised": owned, "ip_to_drone": ip_to_drone, "n": n,
-               "link_up": link_t, "snr": snr_t, "gps_err": gps_t}
+               "link_up": link_t, "snr": snr_t, "gps_err": gps_t,
+               "pos": pos_t, "max_link": fleet.get("max_link", 40)}
         live = [a for a in env.active_agents if a in env.agent_actions]
 
         # ── Blue decision: hierarchical (per-drone), stateful brain, or per-agent ─
