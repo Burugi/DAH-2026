@@ -111,32 +111,10 @@ def ev(spec):
 
 
 # scenario -> mechanism mapping
-SCEN = [
-    ("A1 공급망→군집웜", {"vectors": ["W"]}),
-    ("A2 MAVLink 명령주입", {"vectors": ["W"], "inject": True}),
-    ("A3 GPS 스푸핑", {"vectors": ["J"]}),
-    ("A4 SATCOM MITM/재전송", {"vectors": ["W"], "blackout_p": 0.3}),
-    ("A5 ROS2/DDS 인젝션", {"vectors": ["W"]}),
-    ("A6 센서 스푸핑", {"vectors": ["J"]}),
-    ("A7 RF 재밍", {"vectors": ["J"]}),
-    ("A8 C2 deauth", {"vectors": ["B"]}),
-    ("A9 OTA 펌웨어", {"vectors": ["W"]}),
-    ("A10 Sybil/비잔틴", {"vectors": ["W"], "poison_q": 0.5}),
-    ("A11 적대적 ML(탐지공격)", {"vectors": ["W"], "detector_q": 0.5}),
-    ("A13 PNT/시간동기", {"vectors": ["J"]}),
-    ("A14 다영역 협조", {"vectors": ["W", "J", "B"]}),
-    ("A17 스웜 C2 탈취", {"vectors": ["W"], "frag_K": 2}),
-    ("A18 SwarmFuzz", {"vectors": ["W"], "frag_K": 3}),
-    ("A19 Raven(은밀)", {"vectors": ["W"], "inject": True, "tempo": 0.4}),
-    ("A20 Incalmo(LLM자율)", {"vectors": ["W", "J", "B"], "tempo": 1.0}),
-    ("A21 VLM 프롬프트인젝션", {"vectors": ["W"], "detector_q": 0.5}),
-    ("A-MV 동시 멀티벡터", {"vectors": ["W", "J", "B"]}),
-    ("A-CONN 연결성 단절", {"vectors": ["W", "J", "B"], "frag_K": 4}),
-    # previously 'unmodellable' — now modelled as proxies
-    ("A12 임베디드 사이드채널", {"vectors": ["W"], "tempo": 0.5, "detector_q": 0.6}),
-    ("A15 내부자 위협", {"vectors": ["W"], "start_red": 3, "detector_q": 0.5}),
-    ("A16 ISR 데이터 탈취", {"vectors": ["W"], "tempo": 0.3, "detector_q": 0.6}),
-]
+# 시나리오 = configs/attack_scenarios.yaml 단일 진실에서 로드 (exp_matrix와 동일 소스)
+_SCEN_YAML = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "configs", "attack_scenarios.yaml")
+SCEN = [(f"{s['id']} {s['name']}", {k: v for k, v in s.items() if k not in ("id", "name", "class")})
+        for s in yaml.safe_load(open(_SCEN_YAML, encoding="utf-8"))["scenarios"]]
 
 print("=== ALL scenarios vs COORDINATOR (점령 | 가용성 | 곱셈종합 | exfilAUC) — comp_F1=0.866 ===")
 rows = []

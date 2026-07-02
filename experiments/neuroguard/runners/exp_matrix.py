@@ -116,21 +116,10 @@ def rollout(seed, spec, mode, R_relay=4, recall=1.0, fp=0.0):
 
 def ev(spec, mode, recall=1.0, fp=0.0): return float(np.mean([rollout(s, spec, mode, recall=recall, fp=fp) for s in EVAL]))
 
-SCEN = [
-    ("A1 공급망웜", {"vectors": ["W"]}), ("A2 MAVLink주입", {"vectors": ["W"], "inject": True}),
-    ("A3 GPS스푸핑", {"vectors": ["J"]}), ("A4 SATCOM", {"vectors": ["W"], "blackout_p": 0.3}),
-    ("A5 DDS인젝션", {"vectors": ["W"]}), ("A6 센서스푸핑", {"vectors": ["J"]}),
-    ("A7 RF재밍", {"vectors": ["J"]}), ("A8 C2deauth", {"vectors": ["B"]}),
-    ("A9 OTA펌웨어", {"vectors": ["W"]}), ("A10 Sybil", {"vectors": ["W"], "poison_q": 0.5}),
-    ("A11 적대적ML", {"vectors": ["W"], "detector_q": 0.5}), ("A13 PNT", {"vectors": ["J"]}),
-    ("A14 다영역", {"vectors": ["W", "J", "B"]}), ("A17 스웜C2탈취", {"vectors": ["W"], "frag_K": 2}),
-    ("A18 SwarmFuzz", {"vectors": ["W"], "frag_K": 3}), ("A19 Raven은밀", {"vectors": ["W"], "inject": True, "tempo": 0.4}),
-    ("A20 Incalmo", {"vectors": ["W", "J", "B"]}), ("A21 VLM인젝션", {"vectors": ["W"], "detector_q": 0.5}),
-    ("A-MV 동시", {"vectors": ["W", "J", "B"]}), ("A-CONN 연결성단절", {"vectors": ["W", "J", "B"], "frag_K": 4}),
-    ("A12 사이드채널", {"vectors": ["W"], "tempo": 0.5, "detector_q": 0.6}),
-    ("A15 내부자", {"vectors": ["W"], "start_red": 3, "detector_q": 0.5}),
-    ("A16 ISR탈취", {"vectors": ["W"], "tempo": 0.3, "detector_q": 0.6}),
-]
+# 시나리오 = configs/attack_scenarios.yaml 단일 진실에서 로드 (원본 레포 src/configs 컨벤션)
+_SCEN_YAML = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "configs", "attack_scenarios.yaml")
+_SCEN_RAW = yaml.safe_load(open(_SCEN_YAML, encoding="utf-8"))["scenarios"]
+SCEN = [(f"{s['id']} {s['name']}", {k: v for k, v in s.items() if k not in ("id", "name", "class")}) for s in _SCEN_RAW]
 MODES = [("무방어", "none", 1.0, 0.0), ("코디네이터", "coord", 1.0, 0.0), ("통합방어", "ultimate", 1.0, 0.0),
          ("통합방어현실(r.75/fp.1)", "ultimate", 0.75, 0.1)]
 print("=== 전 시나리오 × 방어 매트릭스 (곱셈종합, 같은 seed) ===", flush=True)
