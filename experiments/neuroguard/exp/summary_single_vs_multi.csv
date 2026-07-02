@@ -1,0 +1,4 @@
+defender,final_compromise,std,reward
+heuristic (multi),0.356,0.12,-453.2
+RL-multi (per-drone Q),0.867,0.057,-533.8
+RL-single (central Q),0.756,0.075,-593.6

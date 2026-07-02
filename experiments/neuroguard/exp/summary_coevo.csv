@@ -1,0 +1,12 @@
+phase_x,compromise,label,blue
+0,0.042,초기(예측방어),pred
+0.75,0.014,R1 공격적응,pred
+1.0,0.014,R1 방어적응(pred),pred
+1.75,0.139,R2 공격적응,pred
+2.0,0.139,R2 방어적응(pred),pred
+2.75,0.028,R3 공격적응,pred
+3.0,0.0,R3 방어적응(predOODA),predOODA
+3.75,0.042,R4 공격적응,predOODA
+4.0,0.042,R4 방어적응(predOODA),predOODA
+4.75,0.0,R5 공격적응,predOODA
+5.0,0.0,R5 방어적응(predOODA),predOODA

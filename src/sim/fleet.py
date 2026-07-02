@@ -41,7 +41,9 @@ def generate_fleet(n_uav=12, n_ugv=6, steps=40, seed=0, grid=100.0,
     label_gps = np.zeros((steps, n), bool)
 
     for atk in attacks or []:
-        tgt = list(atk["targets"])
+        tgt = [i for i in atk["targets"] if i < n]   # drop targets beyond fleet size (avoid IndexError on shrunk fleets)
+        if not tgt:
+            continue
         t0, t1 = max(0, atk["t"][0]), min(steps - 1, atk["t"][1])
         if atk["type"] == "jam":
             snr[t0:t1 + 1][:, tgt] -= atk.get("drop", 22.0)

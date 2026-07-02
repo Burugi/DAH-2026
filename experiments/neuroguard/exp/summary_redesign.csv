@@ -1,0 +1,11 @@
+model,red,compromise,reward
+휴리스틱,rule-red,0.356,-453.2
+휴리스틱,rl-red,0.322,-529.2
+RL-멀티(구8상태),rule-red,0.867,-533.8
+RL-멀티(구8상태),rl-red,0.9,-516.6
+RL-멀티+(풍부),rule-red,0.389,-492.4
+RL-멀티+(풍부),rl-red,0.4,-505.4
+하이브리드(구),rule-red,0.289,-511.0
+하이브리드(구),rl-red,0.2,-489.8
+HYBRID+ (재설계),rule-red,0.178,-411.8
+HYBRID+ (재설계),rl-red,0.244,-469.8
