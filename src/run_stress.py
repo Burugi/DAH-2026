@@ -32,7 +32,7 @@ INTENSITIES = [
 ]
 
 SCENARIOS   = ["A_CONN", "A7", "A1", "A_MV"]
-BLUE_TYPES  = ["rule", "react", "hier_h2"]
+BLUE_TYPES  = ["rule", "react", "hier_h2", "hier_h3_tight"]
 SEEDS       = list(range(10))
 
 BASE_CFG = {
