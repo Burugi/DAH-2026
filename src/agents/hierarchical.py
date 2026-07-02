@@ -306,3 +306,20 @@ class HierNoTrigger(HierarchicalBlue):
 
     def _should_call_llm(self, ctx: dict) -> bool:
         return True     # update stance every step
+
+
+class HierDropStance(HierarchicalBlue):
+    """Leave-one-stance-out: remap one non-NORMAL stance to NORMAL.
+
+    Full hier_h2 minus this variant's D_mult = the dropped stance's marginal
+    contribution. Isolates which individual stance drives (or hurts) performance.
+    """
+    def __init__(self, n: int, drop: str, n_hubs: int = 2, llm_budget: int = 5):
+        super().__init__(n, n_hubs=n_hubs, llm_budget=llm_budget)
+        self.drop = drop
+
+    def _stub_commander(self, state: dict) -> dict:
+        result = super()._stub_commander(state)
+        if result["stance"] == self.drop:
+            result["stance"] = "NORMAL"
+        return result
