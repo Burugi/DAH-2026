@@ -2,7 +2,7 @@
 
 **무엇을 재나:** 23개 공격 시나리오(`configs/attack_scenarios.yaml`)를 **무방어 / 코디네이터 / 통합방어 /
 통합방어(현실 탐지)** 로 같은 seed에서 돌려 **가용성 곱셈종합**(= `mean(1−점령, 1−AUC, 탐지F1) × 가용성`,
-↑좋음)을 비교. 재현: `runners/exp_matrix.py` → `results/summary_matrix.csv`.
+↑좋음)을 비교. 재현: `runners/exp_matrix.py` → `benchmarks/summary_matrix.csv`.
 
 ## 요약 (23시나리오 평균 / worst-case)
 | 방어 | 평균 곱셈 | worst |

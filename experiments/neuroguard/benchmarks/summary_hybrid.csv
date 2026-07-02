@@ -1,0 +1,5 @@
+defense,평균점령,worst_case,곱셈종합
+adaptive,0.189,0.278,0.676
+branch,0.168,0.256,0.678
+C_multiobj,0.187,0.3,0.747
+hybrid,0.187,0.244,0.5

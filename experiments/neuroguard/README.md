@@ -11,7 +11,7 @@
 |------|------|
 | `configs/attack_scenarios.yaml` | **공격 시나리오 23종 = 단일 진실**(데이터). 원본 `src/configs/scenario_*.yaml` 컨벤션. 시나리오 추가는 여기 한 줄. |
 | `runners/` | 실험 드라이버 `exp_*.py`. 핵심 러너는 `attack_scenarios.yaml`을 로드해 사용. |
-| `results/` | 실험 결과 `summary_*.csv`. |
+| `benchmarks/` | 실험 결과 `summary_*.csv` (팀 레포 `.gitignore`의 `results/` 회피용 폴더명). |
 | `figures/` | 그림 `fig*.png`, 렌더 애니메이션. |
 | `docs/` | 문서(md) — 제출 보고서·시나리오 코드연계·추가연구·마스터 인덱스 등. |
 
@@ -27,7 +27,7 @@
 & <venv>\python.exe runners\exp_allscenarios.py  # 코디네이터 기준 23종 전수
 ```
 - ⚠️ 러너 스크립트는 원 개발환경 **절대경로**(`C:\workspace\...`, 팀 레포 `src`)를 가정하고 출력도 그쪽에 쓴다.
-  다른 환경에선 각 러너 상단 경로 상수 조정 필요(향후 파라미터화 예정). `results/`·`figures/`엔 이미 생성된 산출물이 있다.
+  다른 환경에선 각 러너 상단 경로 상수 조정 필요(향후 파라미터화 예정). `benchmarks/`·`figures/`엔 이미 생성된 산출물이 있다.
 
 ## 🔧 포함된 버그픽스 — `src/sim/fleet.py`
 `generate_fleet()`에서 공격 `targets` 인덱스가 fleet 크기 `n`을 넘으면 IndexError(소형 fleet). →
