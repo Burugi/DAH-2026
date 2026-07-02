@@ -525,6 +525,11 @@ BLUE_MULTIAGENT_TYPES: dict[str, object] = {
     "hier_h3":              lambda n: HierH3(n, n_hubs=2, guard_radius=40),
     "hier_h3_wide":         lambda n: HierH3(n, n_hubs=2, guard_radius=60),
     "hier_h3_tight":        lambda n: HierH3(n, n_hubs=2, guard_radius=25),
+    # 반경 최적화 스펙트럼 (좁을수록 reserve 비중↑ = 보존 우선)
+    "hier_h3_r5":           lambda n: HierH3(n, n_hubs=2, guard_radius=5),
+    "hier_h3_r10":          lambda n: HierH3(n, n_hubs=2, guard_radius=10),
+    "hier_h3_r15":          lambda n: HierH3(n, n_hubs=2, guard_radius=15),
+    "hier_h3_r20":          lambda n: HierH3(n, n_hubs=2, guard_radius=20),
 }
 
 ALL_BLUE_TYPES = ["rule", "llm", "rl"] + list(BLUE_MULTIAGENT_TYPES)
