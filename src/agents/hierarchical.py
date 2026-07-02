@@ -42,7 +42,7 @@ from agents.base import BlueBrainBase
 # Default: same model as llm.py (haiku without key, sonnet when key set).
 _COMMANDER_MODEL = "claude-sonnet-4-6"
 
-STANCES = ("NORMAL", "ANTI_JAM", "QUARANTINE", "ANTI_WORM", "EMERGENCY")
+STANCES = ("NORMAL", "ANTI_JAM", "QUARANTINE", "ANTI_WORM", "EMERGENCY", "CONTAIN")
 
 # (stance, role) → blue catalog action id
 # role ∈ {hub, compromised, leaf, safe}
@@ -67,6 +67,13 @@ _POLICY: dict[tuple[str, str], int] = {
     ("EMERGENCY",  "compromised"): 3,   # RemoveSessions
     ("EMERGENCY",  "leaf"):        3,   # RemoveSessions
     ("EMERGENCY",  "safe"):        3,   # RemoveSessions
+    # CONTAIN — 대량 점령 시 연결성 보존형 대응 (EMERGENCY 대체, ablation 근거)
+    # EMERGENCY(전원 RemoveSessions)는 가용성을 버려 유의하게 해로움(p=3.2e-4).
+    # 허브는 Failsafe로 자율 연결 유지, 나머지는 공격적 탈환/제거.
+    ("CONTAIN",    "hub"):         9,   # Failsafe — 허브 자율 방어(연결 유지)
+    ("CONTAIN",    "compromised"): 3,   # RemoveSessions
+    ("CONTAIN",    "leaf"):        4,   # RetakeSuspicious
+    ("CONTAIN",    "safe"):        4,   # RetakeSuspicious
 }
 
 
@@ -323,3 +330,41 @@ class HierDropStance(HierarchicalBlue):
         if result["stance"] == self.drop:
             result["stance"] = "NORMAL"
         return result
+
+
+class HierV2(HierarchicalBlue):
+    """증거 기반 개선판 (stance ablation 결과 반영).
+
+    변경점:
+      1) EMERGENCY → CONTAIN : 대량 점령 시 전원 RemoveSessions 대신 허브 연결을
+         Failsafe로 유지. EMERGENCY가 유의하게 해로웠음(Wilcoxon p=3.2e-4).
+      2) ANTI_WORM 게이팅 : ANTI_WORM은 연결성/가용성엔 크게 도움(+0.026/+0.008)이나
+         순수 점령·탐지회피 시나리오엔 해로움. 재밍이 동반될 때만(=연결성 위협 신호)
+         ANTI_WORM을 쓰고, 그 외 대량 점령은 NORMAL(공격적 탈환)로 처리.
+    """
+    def _stub_commander(self, state: dict) -> dict:
+        comp = state["compromised_count"]
+        n = state["total_drones"]
+        jammed = len(state.get("jammed_drones", []))
+        spoofed = len(state.get("gps_spoofed_drones", []))
+
+        if comp / max(1, n) > 0.5:
+            stance = "CONTAIN"                       # (1) EMERGENCY 대체
+        elif jammed >= self.n_hubs:
+            stance = "ANTI_JAM"
+        elif comp >= 3:
+            # (2) ANTI_WORM은 연결성 스트레스(재밍 동반)일 때만
+            stance = "ANTI_WORM" if jammed >= 1 else "NORMAL"
+        elif jammed >= 2 or spoofed >= 2:
+            stance = "QUARANTINE"
+        else:
+            stance = "NORMAL"
+
+        weights = [1.0] * n
+        for i in state.get("jammed_drones", []):
+            if i < n:
+                weights[i] = 0.3
+        for i in state.get("compromised_ids", []):
+            if i < n:
+                weights[i] = 2.0
+        return {"stance": stance, "weights": weights}

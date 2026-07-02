@@ -473,7 +473,7 @@ class OODABlue(BlueBrainBase):
 
 # ══════════════════════════════════════════════════════════════ Registry ══════
 from agents.hierarchical import (HierarchicalBlue, HierNoStance,   # noqa: E402
-                                 HierNoTrigger, HierDropStance)
+                                 HierNoTrigger, HierDropStance, HierV2)
 
 # ── Variant registry (lambdas so parameters are embedded in the key name) ──────
 #
@@ -519,6 +519,8 @@ BLUE_MULTIAGENT_TYPES: dict[str, object] = {
     "hier_drop_quarantine": lambda n: HierDropStance(n, drop="QUARANTINE"),
     "hier_drop_antiworm":   lambda n: HierDropStance(n, drop="ANTI_WORM"),
     "hier_drop_emergency":  lambda n: HierDropStance(n, drop="EMERGENCY"),
+    # ── 증거 기반 개선판 (EMERGENCY→CONTAIN, ANTI_WORM 게이팅) ─────────────
+    "hier_v2":              lambda n: HierV2(n, n_hubs=2, llm_budget=5),
 }
 
 ALL_BLUE_TYPES = ["rule", "llm", "rl"] + list(BLUE_MULTIAGENT_TYPES)
