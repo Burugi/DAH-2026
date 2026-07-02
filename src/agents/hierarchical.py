@@ -51,7 +51,7 @@ _POLICY: dict[tuple[str, str], int] = {
     ("NORMAL",     "compromised"): 3,   # RemoveSessions — clean own node
     ("NORMAL",     "leaf"):        4,   # RetakeSuspicious
     ("NORMAL",     "safe"):        1,   # Monitor
-    ("ANTI_JAM",   "hub"):         7,   # AllowTraffic — restore relay links
+    ("ANTI_JAM",   "hub"):         9,   # Failsafe — autonomous local defense when hub is jammed/cut
     ("ANTI_JAM",   "compromised"): 3,   # RemoveSessions (still needed)
     ("ANTI_JAM",   "leaf"):        7,   # AllowTraffic — contribute to mesh
     ("ANTI_JAM",   "safe"):        7,   # AllowTraffic
