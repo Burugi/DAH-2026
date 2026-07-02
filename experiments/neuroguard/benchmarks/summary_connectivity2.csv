@@ -1,0 +1,7 @@
+atk_target,defense,점령,곱셈
+degree,none,0.244,0.446
+degree,reactive_relay,0.244,0.502
+degree,proactive,0.244,0.465
+artic,none,0.244,0.446
+artic,reactive_relay,0.244,0.502
+artic,proactive,0.244,0.465

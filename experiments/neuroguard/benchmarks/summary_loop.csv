@@ -1,0 +1,9 @@
+loop,red,compromise,reward
+L0 평면 반응형,rule-red,0.356,-453.2
+L0 평면 반응형,rl-red,0.322,-529.2
+L1 OODA-적응(폐루프),rule-red,0.167,-353.4
+L1 OODA-적응(폐루프),rl-red,0.178,-419.6
+L2 예측형(선제),rule-red,0.067,-178.4
+L2 예측형(선제),rl-red,0.078,-232.8
+L3 풀 에이전틱(OODA+예측+메모리),rule-red,0.144,-324.6
+L3 풀 에이전틱(OODA+예측+메모리),rl-red,0.033,-259.0

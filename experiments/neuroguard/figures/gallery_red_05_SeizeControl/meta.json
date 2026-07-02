@@ -1,0 +1,81 @@
+{
+ "run_id": "gallery_red_05_SeizeControl",
+ "cyborg": "3.1",
+ "config": {
+  "name": "gallery",
+  "fleet": {
+   "n_uav": 6,
+   "n_ugv": 2,
+   "grid": 60,
+   "max_link": 40
+  },
+  "steps": 30,
+  "seeds": [
+   0
+  ],
+  "sim": {
+   "starting_num_red": 1,
+   "red_spawn_rate": 0.1,
+   "max_length_data_links": 40
+  },
+  "defense": {
+   "detector": "multisensor",
+   "snr_thresh": 6,
+   "gps_thresh": 8,
+   "response": "safe_mode"
+  },
+  "attacks": []
+ },
+ "red_type": "forced:SeizeControl",
+ "blue_type": "passive",
+ "n_entities": 8,
+ "types": [
+  "uav",
+  "uav",
+  "uav",
+  "uav",
+  "uav",
+  "uav",
+  "ugv",
+  "ugv"
+ ],
+ "seeds": [
+  0
+ ],
+ "steps_used": 30,
+ "defense": {
+  "detector": "multisensor",
+  "response": "safe_mode",
+  "comp_F1": 0.846,
+  "jam_F1": 0.0,
+  "gps_F1": 0.0,
+  "gps_err_before": 0.0,
+  "gps_err_after": 0.0
+ },
+ "metrics": {
+  "final_compromise": 0.875,
+  "peak_compromise": 0.875,
+  "time_to_first_compromise": 0.0,
+  "compromise_auc": 0.487,
+  "blue_reward_total": -159.0,
+  "recovered": 0.0,
+  "comp_F1": 0.846,
+  "jam_F1": 0.0,
+  "gps_F1": 0.0,
+  "gps_err_before": 0.0,
+  "gps_err_after": 0.0
+ },
+ "metrics_std": {
+  "final_compromise": 0.0,
+  "peak_compromise": 0.0,
+  "time_to_first_compromise": 0.0,
+  "compromise_auc": 0.0,
+  "blue_reward_total": 0.0,
+  "recovered": 0.0,
+  "comp_F1": 0.0,
+  "jam_F1": 0.0,
+  "gps_F1": 0.0,
+  "gps_err_before": 0.0,
+  "gps_err_after": 0.0
+ }
+}
