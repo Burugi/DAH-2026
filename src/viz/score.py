@@ -1,15 +1,13 @@
-"""Composite attack / defense scores (numpy only, no CybORG so it runs offline).
+"""Defense-only performance score (numpy only, no CybORG so it runs offline).
 
-Two role scores in [0,1], each a plain (unweighted) average of self-contained
-sub-metrics, so a single number per side tells which agentic is best:
+최종 성능 지표는 순수 방어 성능이다. 공격측 점수와 가용성은 방어 점수에서 제외한다
+(가용성은 재밍 등 공격 효과가 혼재하고, 단일 시나리오 방어 성능 측정이 목적이므로).
 
-  attack_score  = mean(final_compromise, compromise_auc, 1 - ttf_norm, 1 - comp_F1)
-  defense_score = mean(1 - final_compromise, 1 - compromise_auc, comp_F1, availability)
+  defense_score = mean(1 - final_compromise, 1 - compromise_auc, comp_F1)   ← 보고용 최종 지표
 
-availability = mean over steps and entities of (not compromised) AND (link up).
-Per-step a_t / d_t drive the dashboard's running-score chart. Blue cumulative
-reward and the extended detection F1s are reported separately (not folded in) to
-keep the score self-contained and comparable across runs and scenarios.
+세 항 모두 순수 방어: 최종 미점령 비율, 에피소드 평균 미점령 비율, 점령 탐지 F1.
+attack_score / availability 는 진단용으로만 함께 반환(보고서 지표에는 미포함).
+Per-step a_t / d_t 는 대시보드 차트용(별도).
 """
 import numpy as np
 
@@ -21,17 +19,17 @@ def availability(red_owned, link_up):
 
 
 def episode_scores(metrics, red_owned_all, link_up_all, steps):
-    """metrics = the averaged per-matchup dict; *_all = stacked (seeds, steps, n)."""
-    V = availability(red_owned_all, link_up_all)
+    """metrics = the averaged per-matchup dict; *_all = stacked (seeds, steps, n).
+
+    defense_score 가 보고용 최종 방어 성능(가용성·공격점수 제외).
+    """
+    V = availability(red_owned_all, link_up_all)               # 진단용
     ttf_norm = min(1.0, metrics["time_to_first_compromise"] / max(1, steps))
     fc, cauc, cf1 = metrics["final_compromise"], metrics["compromise_auc"], metrics["comp_F1"]
-    A = float(np.mean([fc, cauc, 1 - ttf_norm, 1 - cf1]))
-    D = float(np.mean([1 - fc, 1 - cauc, cf1, V]))
-    # 곱셈종합 = D_core × availability (대회식: 가용성=0이면 전체=0)
-    D_core = float(np.mean([1 - fc, 1 - cauc, cf1]))
-    D_mult = round(D_core * V, 3)
+    A = float(np.mean([fc, cauc, 1 - ttf_norm, 1 - cf1]))      # 진단용(공격측)
+    D = float(np.mean([1 - fc, 1 - cauc, cf1]))                # ★ 방어 단일 성능
     return {"attack_score": round(A, 3), "defense_score": round(D, 3),
-            "availability": round(V, 3), "D_mult": D_mult}
+            "availability": round(V, 3)}
 
 
 def per_step(red_owned, link_up):
