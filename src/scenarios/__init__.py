@@ -27,7 +27,7 @@ def _all_files():
 def load_scenario(scenario_id: str, cfg: dict | None = None) -> dict:
     """Load a scenario YAML by id (e.g. 'A1' or 'A14').
 
-    If cfg is provided, merges the scenario's attacks block and defense block
+    If cfg is provided, merges the scenario's attacks, defense and worm blocks
     into a copy of cfg and returns it. Otherwise returns the raw scenario dict.
     """
     target_id = scenario_id.upper().lstrip("A").zfill(1)  # normalise
@@ -44,6 +44,11 @@ def load_scenario(scenario_id: str, cfg: dict | None = None) -> dict:
             # Merge defense (scenario values take precedence)
             if data.get("defense"):
                 merged["defense"] = {**(merged.get("defense") or {}), **data["defense"]}
+            # Merge worm (버그 수정: 기존엔 병합 누락 → run._worm_step의 cfg.get("worm")가
+            # None이라 A01/A09/A14/A17 등의 웜이 실행되지 않았음. pre_compromise는
+            # run.py가 cfg["_scenario"]에서 읽으므로 아래 _scenario 병합으로 이미 정상.)
+            if data.get("worm"):
+                merged["worm"] = data["worm"]
             merged["_scenario"] = data
             return merged
     raise FileNotFoundError(f"No scenario file found for id '{scenario_id}'")
