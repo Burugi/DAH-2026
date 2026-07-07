@@ -28,13 +28,29 @@
 | `verify_c2.py` | C2 역방향 검증 (기법→행동 전수, 죽은행동) | C2 |
 | `llm_hook.py` | 후보 중 LLM 선택 + 근거 (오프라인 폴백) | §9 |
 
-## 실행
+## 실행 (팀원용 — 바로 돌리기)
+파생 산출물(`d3fend_techniques.jsonl`, `attack_to_d3fend.json`, `d3fend_index.npz`)이
+**저장소에 포함**돼 있어 다운로드·재빌드 없이 바로 실행된다.
 ```bash
+pip install -r defense_rag/requirements.txt   # sentence-transformers 등 (별도 env 권장)
 cd src
-bash defense_rag/data/download_data.sh   # 최초 1회 (원본 덤프 ~50MB)
+python -m defense_rag.pipeline    # mock 입력 e2e 데모
+python -m defense_rag.verify_c2   # 시나리오 23개 매핑 커버리지 검증
+```
+파이썬에서 직접 호출:
+```python
+from defense_rag.pipeline import DefenseRAG
+rag = DefenseRAG()
+out = rag.recommend({"detections": [{"technique_id": "T1210", "observation": "...",
+                                      "target": {"type": "hosts", "value": ["drone_07"]}}]})
+```
+
+## 원본 재생성 (필요할 때만)
+KB를 처음부터 다시 만들 때만 필요(원본 덤프 ~50MB, 저장소엔 미포함):
+```bash
+bash defense_rag/data/download_data.sh   # 공식 덤프 다운로드
 python -m defense_rag.build_kb           # 파싱 → jsonl + json
-python -m defense_rag.index              # 벡터 인덱스 생성 (.npz)
-python -m defense_rag.pipeline           # mock 입력 e2e 데모
+python -m defense_rag.index              # 벡터 인덱스 재생성 (.npz)
 ```
 
 ## 임베딩
