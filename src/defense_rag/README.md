@@ -25,6 +25,8 @@
 | `lookup.py` | ATT&CK id → D3FEND 기법 직접 조회 | A4 |
 | `action_map.py` | D3FEND 기법 → CybORG blue 행동 매핑표(초안) | A5 |
 | `pipeline.py` | 탐지 입력 → 추천 행동 e2e | A6 |
+| `verify_c2.py` | C2 역방향 검증 (기법→행동 전수, 죽은행동) | C2 |
+| `llm_hook.py` | 후보 중 LLM 선택 + 근거 (오프라인 폴백) | §9 |
 
 ## 실행
 ```bash
@@ -40,8 +42,14 @@ python -m defense_rag.pipeline           # mock 입력 e2e 데모
 다운로드 후 완전 오프라인. API 키 불필요. 시뮬레이터(numpy 1.23 고정 py3.11)와
 **별도 프로세스**로 도므로 의존성 충돌 없음.
 
+## LLM 훅
+`llm_hook.py`는 `ANTHROPIC_API_KEY`가 있으면 Claude(기본 `claude-sonnet-5`,
+env `DEFENSE_RAG_LLM_MODEL`로 변경)가 후보 방어 행동 중 하나를 골라 근거를 쓴다.
+구조화 출력으로 `{action_id, rationale}`만 받고, 후보 밖 id·오류·키 없음이면
+규칙 기반으로 폴백(오프라인 시연 보장). 출력의 `llm_used`로 어느 경로였는지 표시.
+
 ## 남은 일 (합의 필요, PLAN §5-B/C)
-- B1 입력 인터페이스 확정(탐지 담당자) — 현재는 §6 초안 형식 사용
-- C2 `action_map.py` 초안을 실제 CybORG 행동 공간으로 검증
-- LLM 근거 생성 훅(현재 규칙 기반 폴백) — Claude API 연결 시 교체
-- D3FEND의 IT 편향으로 드론/GPS/DoS 관측은 벡터 점수가 낮음 → 도메인 힌트 보강 검토
+- B4 통합 테스트 — 탐지(RAG-A) 실제 output 연결
+- LLM 훅 **라이브 호출 검증** — 현재 크레덴셜 없어 오프라인만 검증됨
+- D3FEND의 IT 편향으로 드론/GPS/DoS 관측은 벡터 점수가 낮음 → 도메인 힌트 보강(옵션)
+- ATLAS 노드 KB 포함 확인 (A11 적대적 ML)
