@@ -59,10 +59,23 @@ TECHNIQUE_OVERRIDE = {
 }
 
 
-def d3fend_to_action(d3fend_id, tactic):
-    """D3FEND 기법 id + tactic -> (blue_action_id, action_name). 매핑 실패 시 Monitor(1)."""
+# Detect tactic 세분화(C2 검증 결과): 프로세스/파일/호스트 검사 성격이면
+# Monitor(네트워크 관측)가 아니라 Analyse(자기 드론 세션 검사)로 보낸다.
+# 이 규칙이 없으면 Detect가 전부 Monitor로 몰려 Analyse(2)가 사장됨.
+_HOST_ANALYSIS_KW = ("File", "Process", "Memory", "System Call", "Binary",
+                     "Executable", "Session", "Registry", "Module",
+                     "Code Segment", "Terminal")
+
+
+def d3fend_to_action(d3fend_id, tactic, label=""):
+    """D3FEND 기법 -> (blue_action_id, action_name). 매핑 실패 시 Monitor(1).
+
+    우선순위: 기법 override > Detect 세분화(호스트검사→Analyse) > tactic 기본.
+    """
     if d3fend_id in TECHNIQUE_OVERRIDE:
         aid = TECHNIQUE_OVERRIDE[d3fend_id]
+    elif tactic == "Detect" and any(k in (label or "") for k in _HOST_ANALYSIS_KW):
+        aid = 2                                 # Analyse (프로세스/파일/세션 검사)
     else:
         aid = TACTIC_TO_ACTION.get(tactic, 1)   # 모르면 일단 관찰(Monitor)
     return aid, BLUE_ACTIONS[aid][0]

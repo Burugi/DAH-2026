@@ -102,7 +102,7 @@ class DefenseRAG:
         # tactic 다양성을 살려 상위 몇 개만 blue 행동으로 변환
         seen_action, actions = set(), []
         for t in techs[: self.k]:
-            aid, aname = action_map.d3fend_to_action(t["d3fend_id"], t["tactic"])
+            aid, aname = action_map.d3fend_to_action(t["d3fend_id"], t["tactic"], t["label"])
             # area(광역)면 특정 호스트 지목이 필요한 제거/재탈환은 건너뛴다
             if ttype == "area" and aid in _PER_HOST_ACTIONS:
                 continue
