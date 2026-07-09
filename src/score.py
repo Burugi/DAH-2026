@@ -8,7 +8,8 @@ run.py(rule/llm/rl 전용)로는 못 돌린다. 이 러너가 그 rollout+점수
   python score.py --model hvt --scenario A17 --recall 0.75 --fp 0.1 --seeds 5
   python score.py --model hvt --scenario A17 --log steps.csv     # step별 상태 CSV
 
-모델: hvt(=jy_hvt) · reach2  (rag-guided는 appendix/로 이관 — 별도 RAG env 필요)
+모델: hvt(=jy_hvt) · reach2 · rag-guided(HVT+RAG — appendix/rag_guided.py,
+      attack_class는 RAG-A 오프라인 산출물 scenario_attack_class.json에서 주입)
 채점: 채널① 방어점수 = mean(1-최종점령, 1-평균점령). ↑ 높을수록 우수.
 실전조건: --recall 0.75 --fp 0.1 (미탐/오탐). 생략 시 오라클(1.0/0.0).
 """
@@ -24,15 +25,24 @@ from agents import brains                               # _Red (make_red 의존)
 from agents.defense_base import adjacency, VEC_AIDS     # 토폴로지 헬퍼 + 공격레인→행동
 
 
-def load_policy(name):
+def load_policy(name, scenario=None):
     """이름 → DefensePolicy 인스턴스 (매 seed 새로 생성해 상태 격리)."""
     if name in ("hvt", "jy_hvt"):
         from agents.jy_hvt import HVTDefense; return HVTDefense()
     if name == "reach2":
         from agents.reach2 import ReachV2; return ReachV2()
     if name in ("rag-guided", "rag_guided"):
-        raise SystemExit("rag-guided는 appendix/로 이관됨 (별도 RAG env 필요). hvt 또는 reach2 사용.")
-    raise SystemExit(f"unknown model {name!r} (available: hvt, reach2)")
+        # HVT+RAG: RAG-A(appendix/attack_rag)가 산출한 시나리오별 attack_class를 주입해
+        # 대응 자세(봉쇄우선/복원력)를 라우팅. 임베딩 env 불필요(오프라인 산출물 사용).
+        import json
+        appendix = os.path.join(os.path.dirname(_SRC), "appendix")
+        sys.path.insert(0, appendix)
+        from rag_guided import RAGGuidedPolicy
+        cls_path = os.path.join(appendix, "attack_rag", "rag_data", "scenario_attack_class.json")
+        classes = json.load(open(cls_path, encoding="utf-8"))
+        key = (scenario or "").replace("-", "_")
+        return RAGGuidedPolicy(attack_class=classes.get(key, "unknown"))
+    raise SystemExit(f"unknown model {name!r} (available: hvt, reach2, rag-guided)")
 
 
 def get_spec(sid):
@@ -96,7 +106,7 @@ def episode(seed, spec, policy, recall, fp, log_rows=None, sid=""):
 
 def main():
     ap = argparse.ArgumentParser(description="방어 모델 채점 (DefensePolicy)")
-    ap.add_argument("--model", default="hvt", help="hvt · reach2")
+    ap.add_argument("--model", default="hvt", help="hvt · reach2 · rag-guided")
     ap.add_argument("--scenario", default="A17", help="시나리오 id (A1~A21, A-CONN, A-MV)")
     ap.add_argument("--recall", type=float, default=1.0, help="현실 탐지율(미탐). 실전 0.75")
     ap.add_argument("--fp", type=float, default=0.0, help="현실 오탐율. 실전 0.1")
@@ -109,7 +119,7 @@ def main():
     log_rows = [] if a.log else None
     scores = []
     for s in seeds:
-        final, auc, avail = episode(s, spec, load_policy(a.model), a.recall, a.fp, log_rows, a.scenario)
+        final, auc, avail = episode(s, spec, load_policy(a.model, a.scenario), a.recall, a.fp, log_rows, a.scenario)
         scores.append(float(np.mean([1 - final, 1 - auc])))
 
     tag = "" if (a.recall == 1.0 and a.fp == 0.0) else f" (현실탐지 r{a.recall}/fp{a.fp})"
