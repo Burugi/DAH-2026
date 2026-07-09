@@ -4,7 +4,8 @@
 파이프라인 중 **방어 채택** 부분. 처음 보는 공격에도 외부 지식(MITRE D3FEND)을
 검색해 CybORG blue 행동을 추천한다.
 
-전체 배경·설계 판단은 저장소 루트의 `DEFENSE_RAG_PLAN.md` 참고.
+전체 배경·설계 판단은 팀 공유 문서 `DEFENSE_RAG_PLAN.md` 참고(저장소 외부).
+RAG-A와의 end-to-end 통합·실측은 `../attack_rag/docs/RAG_통합_검증_보고.md` 참고.
 
 ## 하이브리드 2경로
 ```

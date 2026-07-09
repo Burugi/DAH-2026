@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """방어 모델(DefensePolicy) 채점 러너 — 팀 src 자립 실행.
 
-우리 방어 모델(agents/jy_hvt·reach2)은 DefensePolicy 인터페이스(reset/step)라
+우리 방어 모델(agents/hvt·reach2)은 DefensePolicy 인터페이스(reset/step)라
 run.py(rule/llm/rl 전용)로는 못 돌린다. 이 러너가 그 rollout+점수를 담당.
 
 사용:
@@ -9,7 +9,7 @@ run.py(rule/llm/rl 전용)로는 못 돌린다. 이 러너가 그 rollout+점수
   python score.py --scenario A17 --log steps.csv                    # step별 상태 CSV
 
 모델: rag-guided(기본, HVT+RAG — appendix/rag_guided.py, attack_class는 RAG-A
-      오프라인 산출물 scenario_attack_class.json에서 주입) · hvt(=jy_hvt) · reach2
+      오프라인 산출물 scenario_attack_class.json에서 주입) · hvt · reach2
 채점: 채널① 방어점수 = mean(1-최종점령, 1-평균점령). ↑ 높을수록 우수.
 실전조건: --recall 0.75 --fp 0.1 (미탐/오탐). 생략 시 오라클(1.0/0.0).
 """
@@ -27,8 +27,8 @@ from agents.defense_base import adjacency, VEC_AIDS     # 토폴로지 헬퍼 + 
 
 def load_policy(name, scenario=None):
     """이름 → DefensePolicy 인스턴스 (매 seed 새로 생성해 상태 격리)."""
-    if name in ("hvt", "jy_hvt"):
-        from agents.jy_hvt import HVTDefense; return HVTDefense()
+    if name == "hvt":
+        from agents.hvt import HVTDefense; return HVTDefense()
     if name == "reach2":
         from agents.reach2 import ReachV2; return ReachV2()
     if name in ("rag-guided", "rag_guided"):

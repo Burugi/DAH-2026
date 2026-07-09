@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """방어 정책 공통 베이스 + 토폴로지/재장악 헬퍼.
 
-방어 모델(reach2·jy_hvt·rag_guided 등)이 공통으로 쓰는 최소 인프라를 한 곳에 모음.
+방어 모델(reach2·hvt·rag_guided 등)이 공통으로 쓰는 최소 인프라를 한 곳에 모음.
 (개인 벤치 하네스에서 팀 레포로 추출 — 범용 인프라, 경쟁 우위 아님. 채점 러너는 미포함.)
 
 Policy 인터페이스: reset(cfg,fleet,spec,hubs,black,ml,recall,fp) + step(comp,pos,env,live,ip2d,rng)->(acts,avail)

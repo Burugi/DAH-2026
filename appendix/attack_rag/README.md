@@ -4,10 +4,11 @@
 **공격 탐지** 부분. 관측한 이상징후(SNR·GPS·세션·확산)만 보고 **"무슨 공격인지(ATT&CK 기법)"**
 를 검색으로 식별한다. 특히 **처음 보는 공격(novel)** 대응이 목적.
 
-`src/defense_rag/`(방어 채택 RAG-B)와 짝을 이룬다: **RAG-A(무슨 공격?) → RAG-B(어떻게 막나?)**.
+`appendix/defense_rag/`(방어 채택 RAG-B)와 짝을 이룬다: **RAG-A(무슨 공격?) → RAG-B(어떻게 막나?)**.
 
-> ★ **HVT+RAG 통합 모델(v2)은 `src/agents/rag_guided.py` (RAGGuidedPolicy)** — 방어정책(reach2/HVT) + RAG 자세계층.
-> RAG-A가 attack_class를 산출하고, 그 정책이 자세를 라우팅한다(Posture Router). 실측·비교는 `docs/RAG_통합_검증_보고.md` §7.
+> ★ **HVT+RAG 통합 모델(v2)은 `appendix/rag_guided.py` (RAGGuidedPolicy)** — 방어정책(reach2/HVT 계열) + RAG 자세계층.
+> RAG-A가 attack_class를 산출하고, 그 정책이 자세를 라우팅한다(Posture Router). **`src/score.py`의 기본 모델**로
+> 실행된다(오프라인 산출물 사용, 임베딩 env 불필요). 실측·비교는 `docs/RAG_통합_검증_보고.md` §7.
 
 ## 파이프라인
 ```
@@ -57,10 +58,12 @@ o = r.identify("SNR 급락 + 인접 순차 감염", target_host=[3, 5])
 
 ## 실행 (별도 env 권장 — CybORG sim과 충돌 방지)
 ```bash
-pip install -r attack_rag/requirements.txt   # sentence-transformers 등
-cd src
-python -m attack_rag.rag_a                    # 데모
-python attack_rag/embed_validate.py BAAI/bge-m3   # 검증
+pip install -r attack_rag/requirements.txt   # sentence-transformers, langchain-text-splitters 등
+cd appendix
+python -m attack_rag.rag_a                    # RAG-A 단독 데모
+python -m attack_rag.integration_test         # RAG-A→RAG-B end-to-end
+python -m attack_rag.build_index              # 인덱스 재생성 (KB 변경 시에만)
+cd attack_rag && python embed_validate.py BAAI/bge-m3   # held-out 검증
 ```
 ⚠️ **sentence-transformers가 torch/numpy를 끌어와 CybORG(numpy==1.23) 환경과 충돌** → 별도 env에 설치.
 
