@@ -75,9 +75,9 @@ pip install -r requirements.txt
 ## 실행
 
 ```bash
-# HVT 방어 채점 (모델: hvt · reach2)
-python src/score.py --model hvt --scenario A17 --recall 0.75 --fp 0.1 --seeds 5
-python src/score.py --model hvt --scenario A17 --log steps.csv    # step별 상태 CSV
+# 방어 채점 — 기본 모델은 HVT+RAG(rag-guided). 옵션: --model hvt · reach2
+python src/score.py --scenario A17 --recall 0.75 --fp 0.1 --seeds 5
+python src/score.py --scenario A17 --log steps.csv    # step별 상태 CSV
 
 # 시각화 — docs/sample_run/ 샘플은 CybORG 없이도 동작
 python src/viz/dashboard.py docs/sample_run --png   # dashboard.html + 프리뷰 PNG
@@ -88,8 +88,10 @@ python src/sweep.py src/configs/sweep.yaml          # 첫 실행 시 rl 학습
 python src/analyze.py                               # results/ 요약표
 ```
 
-HVT는 score.py 기준 방어점수 약 0.92(A17, 실전탐지)로, 탐지된 감염을 전부 재장악하는 reach2(약 0.90)보다
-오탐 낭비가 적음. 베이스라인 종합점수(5시드, 0~1)는 규칙기반 방어가 가장 높음.
+기본 모델 HVT+RAG(rag-guided)는 RAG-A의 attack_class로 대응 자세를 라우팅해 실전조건(18 실공격,
+5시드) 0.931로 HVT(0.922)와 동률 이상이며, 재밍 시나리오에서 오탐 파괴적 재장악을 회피함(A7: 0.946
+vs 0.930). HVT 단독은 방어점수 약 0.92(A17, 실전탐지)로, 탐지된 감염을 전부 재장악하는 reach2(약
+0.90)보다 오탐 낭비가 적음. 베이스라인 종합점수(5시드, 0~1)는 규칙기반 방어가 가장 높음.
 
 | 방식 | 공격 A | 방어 D |
 |---|---|---|
