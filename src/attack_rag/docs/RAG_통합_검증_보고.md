@@ -109,8 +109,48 @@
 
 ---
 
+## 7. 구조 개선 + 최종 성능 — HVT+RAG (v2)
+
+§6은 naive 통합(RAG-B 권고를 sim에 직접 실행)의 한계를 보였다. 이를 **attack_class 라우팅 + NIST/D3FEND 정식 대응절차**로 교정한 최종 통합 모델이 **HVT+RAG (v2)** 이다.
+
+**통합 모델 파일: `src/agents/rag_guided.py` (RAGGuidedPolicy)** — 방어정책(reach2/HVT 계열) + RAG 자세계층. RAG-A가 attack_class를 산출(오프라인) → 정책이 자세만 라우팅(행동 직접결정 X = Posture Router).
+
+### 7-1. 개선 3종
+| 항목 | 개선 |
+|---|---|
+| **RAG-A: attack_class** | 감염/비감염/재밍/unknown 태그 (+ abstention) — 자세 라우팅 신호 |
+| **RAG-B: 정식 절차** | 감염→봉쇄우선(Isolate→Evict→Restore) · 재밍→복원력(FP회피) · unknown→보수봉쇄 (NIST SP 800-61 / D3FEND) |
+| **연동: Posture Router** | attack_class → 자세 플래그만 HVT에 전달 (행동 직접결정 X) |
+
+### 7-2. 실측 (실전조건 채널①, recall0.75/fp0.1, 18 실공격, 5시드)
+| 시스템 | 방어점수 |
+|---|:--:|
+| naive RAG (v1, 권고 직접실행) | 0.599 |
+| **HVT+RAG (v2)** | **0.931** |
+| HVT (챔피언) | 0.922 |
+
+→ **naive 대비 +0.332 회복, HVT 동률.** 원인별: **재밍 = RAG 우세**(FP 파괴적 재장악 회피), **감염 = HVT 우세**(정밀 타겟팅) — 상보 관계.
+
+![RAG 구조개선 효과](diagrams/hvt_rag_results.png)
+
+### 7-3. 전 모델 비교 (실전조건 채널①)
+HVT+RAG·Coordinator(본 연구) ≈ 0.92 로 팀/기존 모델(0.73~0.82)·무방어(0.40) 대비 우위.
+
+![모델 성능 비교](diagrams/model_comparison.png)
+
+### 7-4. 시나리오 동작 — 감염 확산 vs 방어
+무방어는 웜이 최대 ~78%까지 확산, HVT/HVT+RAG는 belief-검증-재장악으로 **~17-19%에서 억제**(초기 seed만 남고 확산 차단).
+
+![시나리오 동작](diagrams/scenario_dynamics.png)
+
+---
+
 ## 결론
 
-**RAG-A ↔ RAG-B 통합 성공.** B1 인터페이스로 완전 연동, **23시나리오 100% 커버**, 예외 처리 견고.
+**RAG-A ↔ RAG-B 통합 성공.** B1 인터페이스 완전 연동, **23시나리오 100% 커버**, 예외 처리 견고.
 
-**도입 vs 미도입 격차 = 방어 결정 커버리지 18/23 → 23/23 (+5 novel, +21.7%p).** RAG는 sim 점수 부스터가 아니라 **sim이 표현 못 하는 고급 novel 위협(펌웨어·사이드채널·적대적ML·LLM/VLM)으로 방어 범위를 확장** — 이게 순수 추가 가치이며 본선·설명가능성에서 발현. 프로덕션은 BGE-M3 임베딩 + sim 실관측 연결이 남음.
+두 축의 가치:
+1. **방어 결정 커버리지 확장 (§6)** — 18/23 → 23/23. sim이 표현 못 하는 고급 novel(펌웨어·사이드채널·적대적ML·LLM/VLM)을 RAG만 식별+대응권고. 본선·설명가능성에서 발현.
+2. **최종 성능 (§7)** — 구조개선(attack_class Posture Router + NIST 절차)으로 naive 0.599 → **HVT+RAG 0.931 (HVT 동률)**. 통합 모델 = `src/agents/rag_guided.py`.
+
+**핵심:** RAG를 raw 행동드라이버로 쓰면 하락(0.599), **attack_class 자세신호 + 정식절차로 쓰면 HVT급(0.931) + novel 커버.** 프로덕션은 BGE-M3 임베딩 + sim 실관측 연결이 남음.

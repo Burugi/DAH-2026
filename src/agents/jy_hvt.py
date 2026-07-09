@@ -36,8 +36,8 @@ reach3와의 차이(핵심): reach3는 detected|fp 전부를 파괴적 재장악
 """
 import numpy as np
 
-from neuroguard.agents.base import DefensePolicy
-from neuroguard.harness import JAM_VECS, actions, adjacency, components, retake_target
+from agents.defense_base import DefensePolicy, JAM_VECS, adjacency, components, retake_target
+from agents import actions
 
 
 class HVTDefense(DefensePolicy):

@@ -6,6 +6,9 @@
 
 `src/defense_rag/`(방어 채택 RAG-B)와 짝을 이룬다: **RAG-A(무슨 공격?) → RAG-B(어떻게 막나?)**.
 
+> ★ **HVT+RAG 통합 모델(v2)은 `src/agents/rag_guided.py` (RAGGuidedPolicy)** — 방어정책(reach2/HVT) + RAG 자세계층.
+> RAG-A가 attack_class를 산출하고, 그 정책이 자세를 라우팅한다(Posture Router). 실측·비교는 `docs/RAG_통합_검증_보고.md` §7.
+
 ## 파이프라인
 ```
 관측 raw  →  크로스워크 매칭(관측→신호)  →  쿼리 확장  →  KB 벡터검색(1456 기법)
