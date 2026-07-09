@@ -16,14 +16,19 @@ print("[로드] RAG-A + RAG-B (all-MiniLM)...")
 raga = RagA()                    # 관측 → ATT&CK
 ragb = DefenseRAG()              # ATT&CK → CybORG 방어
 
+# 케이스 구성: 아는 공격 1 + novel 2 (시나리오 23개·크로스워크 17신호 어디에도 없는 공격).
+# novel 검증의 핵심 — RAG-A는 시나리오 목록이 아니라 ATT&CK/CAPEC 1456개 전체 KB를 검색한다.
 cases = [
-    ("sustained bandwidth flooding jamming on drone_07, SNR collapse, link down", ["drone_07"]),
-    ("neighbor drones sequentially infected, worm lateral spread", ["drone_02", "drone_04"]),
-    ("정체불명의 미세한 텔레메트리 지연 발생", ["drone_01"]),          # 저신뢰 → abstain → raw 폴백 경로
+    ("[아는 공격: RF 재밍]",
+     "sustained bandwidth flooding jamming on drone_07, SNR collapse, link down", ["drone_07"]),
+    ("[★novel: 시나리오 밖 — DNS 터널링 C2]",
+     "펌웨어 업데이트 이후 드론들이 주기적으로 미상 도메인에 DNS 질의를 보내고 응답 크기가 비정상적으로 큼", ["drone_09"]),
+    ("[★novel: 적대적 패치 → abstain]",
+     "카메라 영상에 특정 스티커 패턴이 잡힌 뒤 객체인식이 아군 차량을 지속적으로 오분류", ["drone_04"]),
 ]
 ok = 0
-for obs, host in cases:
-    print(f"\n{'='*70}\n[관측] {obs}")
+for label, obs, host in cases:
+    print(f"\n{'='*70}\n{label}\n[관측] {obs}")
     # ① RAG-A: 관측 → 공격타입 (id + confidence + attack_class)
     a = raga.identify(obs, target_host=host, topk=3)
     top = a["result"][0]
@@ -38,8 +43,10 @@ for obs, host in cases:
     acts = det["recommended_actions"]
     print(f"  ② RAG-B → 경로={det['path']} 추천 방어 {len(acts)}개:")
     for r in acts[:3]:
+        basis = (f"유사도={r['score']}" if r.get("score") is not None
+                 else "ATT&CK→D3FEND 공식매핑")
         print(f"       [{r['action_id']}] {r['action_name']} ← {r['d3fend_label']} "
-              f"({r['d3fend_tactic']}) score={r['score']}")
+              f"({r['d3fend_tactic']}, {basis})")
     if acts:
         ok += 1
     else:
