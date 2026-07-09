@@ -27,9 +27,8 @@ def episode_scores(metrics, red_owned_all, link_up_all, steps):
     ttf_norm = min(1.0, metrics["time_to_first_compromise"] / max(1, steps))
     fc, cauc, cf1 = metrics["final_compromise"], metrics["compromise_auc"], metrics["comp_F1"]
     A = float(np.mean([fc, cauc, 1 - ttf_norm, 1 - cf1]))   # 공격측(진단): comp_F1 유지
-    # ★방어점수에서 comp_F1 제거 — 역설: 감염을 잘 막을수록 탐지할 대상이 적어져 comp_F1↓
-    #   → 좋은 방어가 오히려 감점(실측: reach2가 점령 0.022·가용성 0.886으로 최고인데
-    #     comp_F1 0.403 때문에 열등 방어보다 낮게 순위). 가용성(V)은 유지 — 텔레메트리(재밍) 방어 반영.
+    # 방어점수는 comp_F1을 빼고 계산: 감염을 잘 막을수록 탐지할 대상이 적어져 comp_F1이
+    # 낮아지는 역설 때문. 가용성(V)은 유지해 텔레메트리(재밍) 방어를 반영한다.
     D = float(np.mean([1 - fc, 1 - cauc, V]))
     # 곱셈종합 = D_core × availability (대회식: 가용성=0이면 전체=0)
     D_core = float(np.mean([1 - fc, 1 - cauc]))

@@ -37,7 +37,7 @@ _MENU = actions.blue_menu_text()
 _ACT_NAMES = [c[0] for c in BLUE_CATALOG[:BLUE_DECISION_N]]
 
 
-# ══════════════════════════════════════════════════════════ 1. ReAct Blue ════
+# 1. ReAct Blue
 
 class ReActBlue(BlueBrainBase):
     """Observe → Reason (chain-of-thought) → Act each step.
@@ -66,7 +66,7 @@ class ReActBlue(BlueBrainBase):
         super().__init__(n)
         self.history_k = history_k
 
-    # ── Observe ─────────────────────────────────────────────────────────────
+    # Observe
     def _observe(self, ctx: dict) -> dict:
         comp = ctx["compromised"]
         prev = self.memory[-1]["compromised"] if self.memory else 0
@@ -81,14 +81,14 @@ class ReActBlue(BlueBrainBase):
         return {"count": len(comp), "frac": frac, "delta": delta,
                 "spreading": spreading, "tier": tier}
 
-    # ── Reason + Act (stub) ──────────────────────────────────────────────────
+    # Reason + Act (stub)
     def _stub(self, obs: dict) -> int:
         tier = obs["tier"]
         if obs["spreading"] and tier in ("medium", "high"):
             return 3    # Spreading → RemoveSessions first
         return self.TIER_ACTION[tier]
 
-    # ── Reason + Act (LLM) ──────────────────────────────────────────────────
+    # Reason + Act (LLM)
     def _build_prompt(self, obs: dict, ctx: dict) -> str:
         return (
             f"You are BLUE commander for a drone swarm.\n"
@@ -133,7 +133,7 @@ class ReActBlue(BlueBrainBase):
         self.memory[-1]["tier"] = self._observe(ctx)["tier"]
 
 
-# ══════════════════════════════════════════════════════════ 2. Reflect Blue ══
+# 2. Reflect Blue
 
 class ReflectBlue(BlueBrainBase):
     """Act each step; Reflect every K steps to revise strategy.
@@ -165,7 +165,7 @@ class ReflectBlue(BlueBrainBase):
         self.strategy_desc: str = "Stay passive and monitor until threats appear."
         self.n_reflections: int = 0
 
-    # ── Act ──────────────────────────────────────────────────────────────────
+    # Act
     def _stub_act(self, ctx: dict) -> int:
         comp = ctx["compromised"]
         base = self._STRATEGY_MAP.get(self.strategy, 1)
@@ -181,7 +181,7 @@ class ReflectBlue(BlueBrainBase):
             f"Pick the action id that best executes this strategy:\n{_MENU}"
         )
 
-    # ── Reflect ───────────────────────────────────────────────────────────────
+    # Reflect
     def _reflect_prompt(self) -> str:
         recent = self.memory[-self.reflect_every:]
         rewards = [r["reward"] for r in recent]
@@ -255,7 +255,7 @@ class ReflectBlue(BlueBrainBase):
         self.memory[-1]["strategy"] = self.strategy
 
 
-# ══════════════════════════════════════════════════════════ 3. Planner Blue ══
+# 3. Planner Blue
 
 class PlannerBlue(BlueBrainBase):
     """Plan at episode start → Execute → Re-plan on large deviations.
@@ -281,7 +281,7 @@ class PlannerBlue(BlueBrainBase):
         self._last_replan_t: int = -999
         self._n_replans: int = 0
 
-    # ── Plan ─────────────────────────────────────────────────────────────────
+    # Plan
     def _plan_prompt(self, ctx: dict) -> str:
         return (
             f"Plan a defense strategy for a ~40-step drone-swarm episode.\n"
@@ -322,7 +322,7 @@ class PlannerBlue(BlueBrainBase):
             return [(5, 3), (20, 4), (35, 6), (999, 4)]
         return list(self._DEFAULT_PLAN)
 
-    # ── Execute ───────────────────────────────────────────────────────────────
+    # Execute
     def _phase_aid(self) -> int:
         for until, aid in self._plan:
             if self.t <= until:
@@ -351,7 +351,7 @@ class PlannerBlue(BlueBrainBase):
         self.memory[-1]["n_replans"] = self._n_replans
 
 
-# ══════════════════════════════════════════════════════════ 4. OODA Blue ═════
+# 4. OODA Blue
 
 class OODABlue(BlueBrainBase):
     """Observe → Orient → Decide → Act (military OODA loop) each step.
@@ -391,7 +391,7 @@ class OODABlue(BlueBrainBase):
         self._mode: str = "none"
         self._comp_hist: list[int] = []
 
-    # ── Observe ───────────────────────────────────────────────────────────────
+    # Observe
     def _observe(self, ctx: dict) -> dict:
         comp = ctx["compromised"]
         prev = self._comp_hist[-1] if self._comp_hist else 0
@@ -403,7 +403,7 @@ class OODABlue(BlueBrainBase):
             "spreading": len(comp) > prev,
         }
 
-    # ── Orient ───────────────────────────────────────────────────────────────
+    # Orient
     def _orient(self, obs: dict) -> tuple[str, str]:
         frac   = obs["count"] / max(1, self.n)
         delta  = obs["delta"]
@@ -437,7 +437,7 @@ class OODABlue(BlueBrainBase):
 
         return level, mode
 
-    # ── Decide ────────────────────────────────────────────────────────────────
+    # Decide
     def _stub_decide(self, level: str, mode: str) -> int:
         return self._POLICY.get((level, mode),
                self._POLICY.get((level, "none"), 1))
@@ -452,7 +452,7 @@ class OODABlue(BlueBrainBase):
             f"{_MENU}"
         )
 
-    # ── Act (entry point) ─────────────────────────────────────────────────────
+    # Act (entry point)
     def step_decide(self, ctx: dict) -> int:
         obs = self._observe(ctx)
         self._comp_hist.append(obs["count"])
@@ -471,11 +471,11 @@ class OODABlue(BlueBrainBase):
         r["mode"]   = self._mode
 
 
-# ══════════════════════════════════════════════════════════════ Registry ══════
+# Registry
 from agents.hierarchical import (HierarchicalBlue, HierNoStance,   # noqa: E402
                                  HierNoTrigger, HierDropStance, HierV2, HierH3)
 
-# ── Variant registry (lambdas so parameters are embedded in the key name) ──────
+# Variant registry (lambdas so parameters are embedded in the key name)
 #
 # Naming convention:
 #   react_k<N>    – history window N steps
@@ -484,44 +484,44 @@ from agents.hierarchical import (HierarchicalBlue, HierNoStance,   # noqa: E402
 #   ooda_w<N>     – trend window N steps
 
 BLUE_MULTIAGENT_TYPES: dict[str, object] = {
-    # ── ReAct: history window ─────────────────────────────────────────────
+    # ReAct: history window
     "react_k2":    lambda n: ReActBlue(n, history_k=2),
     "react":       lambda n: ReActBlue(n, history_k=5),      # default
     "react_k10":   lambda n: ReActBlue(n, history_k=10),
-    # ── Reflect: reflection period ────────────────────────────────────────
+    # Reflect: reflection period
     "reflect_r4":  lambda n: ReflectBlue(n, reflect_every=4),
     "reflect":     lambda n: ReflectBlue(n, reflect_every=8), # default
     "reflect_r12": lambda n: ReflectBlue(n, reflect_every=12),
-    # ── Plan: re-plan threshold ───────────────────────────────────────────
+    # Plan: re-plan threshold
     "plan_t20":    lambda n: PlannerBlue(n, replan_threshold=0.20),
     "plan":        lambda n: PlannerBlue(n, replan_threshold=0.45), # default
     "plan_t65":    lambda n: PlannerBlue(n, replan_threshold=0.65),
-    # ── OODA: trend window ────────────────────────────────────────────────
+    # OODA: trend window
     "ooda_w3":     lambda n: OODABlue(n, window=3),
     "ooda":        lambda n: OODABlue(n, window=5),           # default
     "ooda_w8":     lambda n: OODABlue(n, window=8),
-    # ── Hierarchical Hybrid Swarm Defense (Claude commander) ─────────────
+    # Hierarchical Hybrid Swarm Defense (Claude commander)
     "hier":           lambda n: HierarchicalBlue(n, n_hubs=4, llm_budget=5),
     "hier_h2":        lambda n: HierarchicalBlue(n, n_hubs=2, llm_budget=5),
     "hier_h6":        lambda n: HierarchicalBlue(n, n_hubs=6, llm_budget=5),
-    # ── Ablation variants ─────────────────────────────────────────────────
+    # Ablation variants
     "hier_nostance":  lambda n: HierNoStance(n, n_hubs=2),    # dispatch only, no stance
     "hier_notrigger": lambda n: HierNoTrigger(n, n_hubs=2),   # stance every step, no event filter
-    # ── llm_budget variants (hier_h2 기준, n_hubs=2) ──────────────────────
+    # llm_budget variants (hier_h2 기준, n_hubs=2)
     "hier_b1":  lambda n: HierarchicalBlue(n, n_hubs=2, llm_budget=1),
     "hier_b2":  lambda n: HierarchicalBlue(n, n_hubs=2, llm_budget=2),
     "hier_b3":  lambda n: HierarchicalBlue(n, n_hubs=2, llm_budget=3),
     "hier_b5":  lambda n: HierarchicalBlue(n, n_hubs=2, llm_budget=5),   # 현재 hier_h2
     "hier_b8":  lambda n: HierarchicalBlue(n, n_hubs=2, llm_budget=8),
     "hier_b15": lambda n: HierarchicalBlue(n, n_hubs=2, llm_budget=15),
-    # ── Leave-one-stance-out (기여도 분해, n_hubs=2 = hier_h2 기준) ─────────
+    # Leave-one-stance-out (기여도 분해, n_hubs=2 = hier_h2 기준)
     "hier_drop_antijam":    lambda n: HierDropStance(n, drop="ANTI_JAM"),
     "hier_drop_quarantine": lambda n: HierDropStance(n, drop="QUARANTINE"),
     "hier_drop_antiworm":   lambda n: HierDropStance(n, drop="ANTI_WORM"),
     "hier_drop_emergency":  lambda n: HierDropStance(n, drop="EMERGENCY"),
-    # ── 증거 기반 개선판 (EMERGENCY→CONTAIN, ANTI_WORM 게이팅) ─────────────
+    # 증거 기반 개선판 (EMERGENCY→CONTAIN, ANTI_WORM 게이팅)
     "hier_v2":              lambda n: HierV2(n, n_hubs=2, llm_budget=5),
-    # ── 동적 역할 배분 (위협 근접도 기반 guardian/reserve) ─────────────────
+    # 동적 역할 배분 (위협 근접도 기반 guardian/reserve)
     "hier_h3":              lambda n: HierH3(n, n_hubs=2, guard_radius=40),
     "hier_h3_wide":         lambda n: HierH3(n, n_hubs=2, guard_radius=60),
     "hier_h3_tight":        lambda n: HierH3(n, n_hubs=2, guard_radius=25),

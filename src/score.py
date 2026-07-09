@@ -1,14 +1,14 @@
 # -*- coding: utf-8 -*-
 """방어 모델(DefensePolicy) 채점 러너 — 팀 src 자립 실행.
 
-우리 방어 모델(agents/jy_hvt·reach2·rag_guided)은 DefensePolicy 인터페이스(reset/step)라
+우리 방어 모델(agents/jy_hvt·reach2)은 DefensePolicy 인터페이스(reset/step)라
 run.py(rule/llm/rl 전용)로는 못 돌린다. 이 러너가 그 rollout+점수를 담당.
 
 사용:
   python score.py --model hvt --scenario A17 --recall 0.75 --fp 0.1 --seeds 5
   python score.py --model hvt --scenario A17 --log steps.csv     # step별 상태 CSV
 
-모델: hvt(=jy_hvt) · reach2 · rag-guided
+모델: hvt(=jy_hvt) · reach2  (rag-guided는 appendix/로 이관 — 별도 RAG env 필요)
 채점: 채널① 방어점수 = mean(1-최종점령, 1-평균점령). ↑ 높을수록 우수.
 실전조건: --recall 0.75 --fp 0.1 (미탐/오탐). 생략 시 오라클(1.0/0.0).
 """
@@ -31,8 +31,8 @@ def load_policy(name):
     if name == "reach2":
         from agents.reach2 import ReachV2; return ReachV2()
     if name in ("rag-guided", "rag_guided"):
-        from agents.rag_guided import RAGGuidedPolicy; return RAGGuidedPolicy()
-    raise SystemExit(f"unknown model {name!r} (available: hvt, reach2, rag-guided)")
+        raise SystemExit("rag-guided는 appendix/로 이관됨 (별도 RAG env 필요). hvt 또는 reach2 사용.")
+    raise SystemExit(f"unknown model {name!r} (available: hvt, reach2)")
 
 
 def get_spec(sid):
@@ -96,7 +96,7 @@ def episode(seed, spec, policy, recall, fp, log_rows=None, sid=""):
 
 def main():
     ap = argparse.ArgumentParser(description="방어 모델 채점 (DefensePolicy)")
-    ap.add_argument("--model", default="hvt", help="hvt · reach2 · rag-guided")
+    ap.add_argument("--model", default="hvt", help="hvt · reach2")
     ap.add_argument("--scenario", default="A17", help="시나리오 id (A1~A21, A-CONN, A-MV)")
     ap.add_argument("--recall", type=float, default=1.0, help="현실 탐지율(미탐). 실전 0.75")
     ap.add_argument("--fp", type=float, default=0.0, help="현실 오탐율. 실전 0.1")

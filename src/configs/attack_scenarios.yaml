@@ -1,5 +1,5 @@
-# NeuroGuard 공격 시나리오 — 단일 진실 (원본 레포 src/configs/scenario_*.yaml 컨벤션에 맞춤)
-# 각 시나리오는 sim 기제 파라미터의 조합. runners/harness가 해석해 red 정책 + 오버레이로 구현.
+# 방어 모델(HVT·reach2)용 공격 시나리오 정의.
+# 각 시나리오는 sim 파라미터의 조합. score.py가 해석해 red 정책 + 오버레이로 구현한다.
 #
 # 파라미터:
 #   vectors    : 공격 레인 리스트 — W(웜 Exploit+전파) / J(재밍 FloodBandwidth) / B(차단 BlockTraffic)

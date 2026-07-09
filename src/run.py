@@ -142,12 +142,12 @@ def rollout(cfg, seed, red_type="rule", blue_type="rule"):
     red_log, blue_log = [], []           # per-step (rep_id, count_vector) for the dashboard
     brains.pop_red_actlog()              # clear any leftovers from env.reset()
 
-    # ── Stateful multi-agent blue brain (react / reflect / plan / ooda) ──────
+    # Stateful multi-agent blue brain (react / reflect / plan / ooda)
     blue_brain = None
     if blue_type in BLUE_MULTIAGENT_TYPES:
         blue_brain = BLUE_MULTIAGENT_TYPES[blue_type](n)
 
-    # ── Pre-compromise: insider / side-channel / leader-takeover (A12/A15/A17) ──
+    # Pre-compromise: insider / side-channel / leader-takeover (A12/A15/A17)
     scenario = cfg.get("_scenario") or {}
     pre_comp = scenario.get("pre_compromise", {})
     if pre_comp:
@@ -171,7 +171,7 @@ def rollout(cfg, seed, red_type="rule", blue_type="rule"):
     for t in range(cfg["steps"]):
         owned = compromised_drones(cyborg, n)
 
-        # ── Worm propagation engine (A1, A9, A14, A17) ──────────────────────
+        # Worm propagation engine (A1, A9, A14, A17)
         _worm_step(t, cfg, cyborg, ip_to_drone, owned, rng_worm)
 
         # Fleet telemetry at step t — passed to hierarchical brain for hub/jam detection
@@ -184,7 +184,7 @@ def rollout(cfg, seed, red_type="rule", blue_type="rule"):
                "pos": pos_t, "max_link": fleet.get("max_link", 40)}
         live = [a for a in env.active_agents if a in env.agent_actions]
 
-        # ── Blue decision: hierarchical (per-drone), stateful brain, or per-agent ─
+        # Blue decision: hierarchical (per-drone), stateful brain, or per-agent
         if blue_brain is not None and hasattr(blue_brain, "team_decide"):
             blue_aids = blue_brain.team_decide(ctx, live)
         elif blue_brain is not None:

@@ -1,38 +1,16 @@
-# jy_hvt — NeuroGuard 방어모델 구조 (원본: neuroguard/agents/hvt.py)
-# HVTDefense — 가설·검증·트리거 (챔피언)  · 실동작 통합은 본선 구조에서.
 # -*- coding: utf-8 -*-
-"""HVT — Hypothesis-Verify-Trigger 방어 (가설·검증·트리거).
+"""HVT — Hypothesis-Verify-Trigger 방어.
 
-기존 belief 방어(BLADE)·frontier 방어(reach3)는 belief/탐지 상위를 **무조건**
-재장악(파괴적 RetakeControl=Restore)한다. 현실 탐지(recall<1, fp>0)에서는
-① 오탐(fp)으로 청정 노드가 target에 섞이고 ② 이미 고립돼 확산 못하는 감염까지
-파괴적으로 재장악해 capacity를 낭비한다. 파괴적 재장악은 청정 노드에도 해로워
-(reach3 주석: frontier 파괴적 재장악 0.900→0.86) 노이즈 탐지서 점령을 되레 키운다.
+belief 상위를 무조건 재장악하지 않고, 각 후보의 재장악 실익을 world-model
+반사실 시뮬로 검증해 트리거를 넘는 것만 파괴적으로 재장악한다.
 
-HVT는 belief 상위를 **무조건 재장악하지 않고**, 각 후보의 재장악 실익을
-**world-model 반사실 시뮬로 검증**해 트리거를 넘는 것만 파괴적 재장악한다.
+  ① 가설: belief b[i]=P(감염)를 웜확산 전진예측 + 탐지 융합으로 유지 (detected+인접만 사용).
+  ② 검증: 후보 i에 대해 Δ_i = "지금 i를 재장악하면 앞으로 H스텝 막는 확산량".
+  ③ 트리거: Δ_i > τ 인 타겟만 파괴적 재장악(RetakeControl). 나머지는 비파괴 자가치유로 hold.
+  ④ 실행: 재장악을 Δ 큰 순으로 다중배정(REDUNDANCY), relay/de-jam 유지.
 
-  ① 가설(Hypothesis): belief b[i]=P(감염) 유지. BLADE식 웜확산 전진예측 +
-     detected 융합(오직 detected+A로만; comp 미사용). 코로보레이션(이웃 belief로
-     확산예측이 뒷받침)이 강할수록 belief↑ → 고립 단발 오탐은 belief가 낮게 유지.
-  ② 검증(Verify): 각 후보 타겟 i에 대해 반사실 Δ_i 계산
-        Δ_i = Σ_H 예측점령(i 유지) − Σ_H 예측점령(i를 지금 재장악)
-            = "i를 지금 재장악하면 앞으로 H스텝 막는 확산량(+자신 점령)".
-     belief 필드를 H스텝 전진(world-model)해 i를 0으로 고정한 반사실과 비교.
-  ③ 트리거(Trigger): Δ_i > τ 인 타겟만 **파괴적 재장악(RetakeControl)**.
-     τ 이하(고립 오탐·확산정지 감염)는 파괴적 재장악을 **hold** — 대신 비파괴
-     자가치유(RemoveOtherSessions)/de-jam/monitor 로 capacity 절약.
-  ④ 실행: 재장악 capacity를 Δ 큰 순으로 reach2식 다중배정(REDUNDANCY). relay·de-jam 유지.
-
-reach3와의 차이(핵심): reach3는 detected|fp 전부를 파괴적 재장악. HVT는 그 중
-**반사실 검증을 통과(Δ>τ)한 고가치만** 파괴적 재장악하고, 나머지는 비파괴 자가치유로
-덮는다 → 오탐/고립감염에 대한 낭비·파괴적 재장악을 줄여 노이즈 탐지서 강건.
-
-★오라클 누수 없음(코드 보장):
-  belief·Δ·target 은 오직 detected(관측)+A(인접)로만 계산된다. step의 comp(true 감염)는
-  (a) detector 관측 샘플링(모든 정책 공통 채널) (b) 가용성 회계(red_jam/inj/lost) 에만 쓴다.
-  belief[]·Δ·target_set·heal_set·missed 어디에도 comp가 직접 들어가지 않는다.
-  오라클 분기(recall=1,fp=0)는 belief/검증 루프를 끄고 reach2와 동일하게 동작한다(비교 기준).
+belief·Δ·target 계산에는 관측(detected)+인접(A)만 쓴다. true 감염(comp)은 탐지 샘플링과
+가용성 회계에만 사용. recall=1·fp=0이면 검증 루프를 끄고 파괴적 재장악을 전량 수행한다.
 """
 import numpy as np
 
@@ -43,26 +21,25 @@ from agents import actions
 class HVTDefense(DefensePolicy):
     name = "hvt"
 
-    # --- 응답 메커니즘(reach2/reach3 계승) ---
+    # --- 응답 메커니즘 ---
     R_relay = None            # 무제한 relay 재연결
     REDUNDANCY = 3            # 재장악 확정 타겟 1대당 청정 재장악 드론 수
 
     # --- ① 가설(belief) 하이퍼 ---
     BETA0 = 0.35              # 웜확산 전진모델 감염률
-    DET_BELIEF = 0.6          # 탐지=증거 하한(오탐 억제 위해 blade 0.9보다 낮춤; 코로보레이션이 나머지 부양)
-    CORR_GAIN = 0.35          # 코로보레이션(확산예측 지지)으로 detected belief 추가부양
-    MISS_KEEP = 0.65          # 미탐지 노드 belief 유지율(미탐지 ≠ 청정)
+    DET_BELIEF = 0.6          # 탐지=증거 belief 하한 (나머지는 코로보레이션이 부양)
+    CORR_GAIN = 0.35          # 확산예측 지지에 따른 detected belief 추가부양
+    MISS_KEEP = 0.65          # 미탐지 노드 belief 유지율 (미탐지 ≠ 청정)
     RETAKE_DECAY = 0.2        # 지난 스텝 재장악한 노드 belief 감쇠
-    FRONTIER_THRESH = 1       # frontier 편입: detected 이웃 수 ≥ THRESH (reach3 계승, 즉시 비파괴 heal)
+    FRONTIER_THRESH = 1       # frontier 편입: detected 이웃 수 ≥ THRESH → 즉시 비파괴 heal
     MISS_TH = 0.4             # belief≥MISS_TH 미탐지 노드 = 예측감염(multi-hop) → 비파괴 자가치유
 
-    # --- ②③ 검증·트리거 하이퍼 (5seed 3000-3004 튜닝 최적) ---
+    # --- ②③ 검증·트리거 하이퍼 ---
     HORIZON = 4               # 반사실 시뮬 호라이즌 H
     TAU = 1.6                 # 트리거 임계 τ (Δ>τ 만 파괴적 재장악)
-    SORT_ORDER = False        # 재장악 배정을 Δ순 정렬(True)/최근접 우선(False). 실측 True는 de-jam
-                              #  배정을 흐트려 재밍 시나리오 하락 → 기본 False(트리거가 HVT 본질).
+    SORT_ORDER = False        # 재장악 배정: Δ순(True) / 최근접 우선(False, de-jam 배정 보존)
 
-    # --- 피드백(BETA 온라인 보정, blade 계승) ---
+    # --- 피드백(BETA 온라인 보정) ---
     BETA_LR = 0.06
     BETA_MIN, BETA_MAX = 0.15, 0.55
 
@@ -78,7 +55,7 @@ class HVTDefense(DefensePolicy):
         self.prev_retaken = set()
         self.prev_expected = 0.0
 
-    # ---- world-model: 웜확산 전진(belief 전파). mpc/blade 확산모델을 벡터화. ----
+    # world-model: 웜확산 전진 (belief 전파)
     def _spread(self, b, A, beta):
         """b_next[i] = b[i] + (1-b[i])*(1 - Π_{A[i,j]}(1-beta*b[j])). comp 미사용, b·A만."""
         L = np.log(1.0 - beta * b)              # b<=DET/spread<1, beta<1 → 1-beta*b>0
@@ -116,7 +93,7 @@ class HVTDefense(DefensePolicy):
         if reconnected:
             seg_groups.append(reconnected)
 
-        # ---- 관측: detector가 true comp를 detector_q로 샘플(모든 정책 공통 채널) ----
+        # 관측: detector가 true comp를 detector_q 확률로 샘플
         detected = set()
         for i in comp:
             if i in unreachable:
@@ -129,7 +106,7 @@ class HVTDefense(DefensePolicy):
         order = {}
 
         if not realistic:
-            # ---- 오라클 분기: belief/검증 루프 OFF, reach2와 동일(비교 기준) ----
+            # 완전관측 분기: belief/검증 루프 OFF, 탐지된 감염 전량 재장악
             heal_set = target_set = nonclean = comp
             order = {i: 0.0 for i in comp}
         else:
@@ -137,7 +114,7 @@ class HVTDefense(DefensePolicy):
             fp_set = {i for i in range(n) if i not in comp and i not in unreachable and rng.random() < self.fp}
             evidence = detected | fp_set
 
-            # ---- ⑤ 피드백(먼저): 지난 예측 vs 이번 실제 detected → BETA 보정 ----
+            # ⑤ 피드백: 지난 예측 vs 이번 실제 detected → BETA 보정
             actual = float(len(detected))
             if self.prev_expected > 0 or actual > 0:
                 if actual > self.prev_expected + 1e-9:
@@ -145,7 +122,7 @@ class HVTDefense(DefensePolicy):
                 elif actual < self.prev_expected - 1e-9:
                     self.beta = max(self.BETA_MIN, self.beta - self.BETA_LR)
 
-            # ---- ① 가설: belief 웜확산 전진예측 + detected 융합(코로보레이션 가중) ----
+            # ① 가설: belief 웜확산 전진예측 + detected 융합(코로보레이션 가중)
             b_pred = self._spread(self.belief, A, self.beta)
             new_b = np.empty(n)
             for i in range(n):
@@ -158,8 +135,8 @@ class HVTDefense(DefensePolicy):
                     new_b[i] *= self.RETAKE_DECAY                   # 되찾음 = 신념↓
             self.belief = new_b
 
-            # ---- frontier(reach3 계승): detected의 청정 이웃(A·detected로만; comp 미사용).
-            #   현실탐지 recall<1로 놓친 이웃 감염을 '즉시' 비파괴 자가치유로 catch(선제, 1-hop). ----
+            # frontier: detected의 청정 이웃(A·detected만). recall<1로 놓친 이웃 감염을
+            #   1-hop 선제 비파괴 자가치유로 catch.
             deg = {}
             for i in detected:
                 row = A[i]
@@ -167,17 +144,17 @@ class HVTDefense(DefensePolicy):
                     if row[j] and j not in evidence and j not in unreachable:
                         deg[j] = deg.get(j, 0) + 1
             frontier = {j for j, c in deg.items() if c >= self.FRONTIER_THRESH}
-            # ---- belief 예측감염(HVT 확장): 누적 belief가 높은 미탐지 노드(multi-hop·시간누적).
+            # belief 예측감염: 누적 belief가 높은 미탐지 노드(multi-hop).
             #   1-hop frontier가 못 잡는 깊은/저탐지(A10 Sybil·A12 stealth) 놓친 감염을
-            #   비파괴 자가치유(RemoveOtherSessions)로 청소. 청정이면 무해. ----
+            #   비파괴 자가치유(RemoveOtherSessions)로 청소. 청정이면 무해.
             missed_belief = {
                 i for i in range(n)
                 if i not in unreachable and i not in evidence and self.belief[i] >= self.MISS_TH
             }
             missed = frontier | missed_belief          # 유휴 드론 비파괴 자가치유 대상
 
-            # ---- ② 검증: reach3가 파괴적 재장악하는 후보(=evidence)에 대해서만 반사실 Δ.
-            #   Δ_i = i를 지금 재장악하면 앞으로 H스텝 막는 점령량(자신+하류확산). ----
+            # ② 검증: 후보(=evidence)에 대해서만 반사실 Δ.
+            #   Δ_i = i를 지금 재장악하면 앞으로 H스텝 막는 점령량(자신+하류확산).
             candidates = [i for i in evidence if i not in unreachable]
             base_tot = self._sim_total(self.belief, A, self.beta, self.HORIZON)
             deltas = {}
@@ -185,12 +162,12 @@ class HVTDefense(DefensePolicy):
                 int_tot = self._sim_total(self.belief, A, self.beta, self.HORIZON, zero=i)
                 deltas[i] = base_tot - int_tot
 
-            # ---- ③ 트리거: Δ>τ 통과분만 파괴적 재장악. 미통과(고립오탐·확산정지)는
-            #   heal_set(evidence)에 남아 비파괴 자가치유로 hold — 파괴적 Restore 낭비 회피. ----
+            # ③ 트리거: Δ>τ 통과분만 파괴적 재장악. 미통과(고립오탐·확산정지)는
+            #   heal_set(evidence)에 남아 비파괴 자가치유로 hold — 파괴적 Restore 낭비 회피.
             target_set = {i for i in candidates if deltas[i] > self.TAU}
             order = {i: -deltas[i] for i in target_set}  # Δ 큰 순 배정
 
-            heal_set = evidence                          # 증거 전부 비파괴 자가치유(reach3와 동일)
+            heal_set = evidence                          # 증거 전부 비파괴 자가치유
             nonclean = evidence                          # 재장악 드론 풀 제외(frontier는 풀에 유지)
 
         red_jam = sum(1 for i in comp if vectors[i % k] in JAM_VECS)
@@ -198,7 +175,7 @@ class HVTDefense(DefensePolicy):
         ctx = {"compromised": comp, "ip_to_drone": ip2d, "n": n}
         sleep = actions.action_index_map(env, live[0]).get("Sleep", [(0, None)])[0][0] if live else 0
 
-        # ---- ④ 실행: reach2식 세그먼트별 다중 재장악 배정(최근접 우선; SORT_ORDER=True면 Δ순) ----
+        # ④ 실행: 세그먼트별 다중 재장악 배정(최근접 우선; SORT_ORDER=True면 Δ순)
         assign, dejam = {}, 0
         sort_order = getattr(self, "SORT_ORDER", False)
         for seg in seg_groups:
@@ -235,7 +212,7 @@ class HVTDefense(DefensePolicy):
                     dejam += 1
                 acts[a] = actions.make_blue_index(1, env, a, ctx)    # de-jam / monitor
 
-        # ---- ⑤ 피드백 상태 저장 ----
+        # ⑤ 피드백 상태 저장
         if realistic:
             self.prev_retaken = set(assign.values())
             reach_mask = np.array([1.0 if i not in unreachable else 0.0 for i in range(n)])

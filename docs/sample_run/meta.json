@@ -1,8 +1,8 @@
 {
- "run_id": "baseline_rule_vs_rl",
+ "run_id": "hvt_A1",
  "cyborg": "3.1",
  "config": {
-  "name": "sweep",
+  "name": "A1 공급망 웜",
   "env": "B",
   "fleet": {
    "n_uav": 12,
@@ -14,9 +14,7 @@
   "seeds": [
    0,
    1,
-   2,
-   3,
-   4
+   2
   ],
   "red_types": [
    "rule",
@@ -68,8 +66,8 @@
    }
   ]
  },
- "red_type": "rule",
- "blue_type": "rl",
+ "red_type": "W",
+ "blue_type": "hvt",
  "n_entities": 18,
  "types": [
   "uav",
@@ -94,9 +92,7 @@
  "seeds": [
   0,
   1,
-  2,
-  3,
-  4
+  2
  ],
  "steps_used": 40,
  "red_action_names": [
@@ -113,7 +109,8 @@
   "Persist",
   "TargetLeader",
   "ExploitKnown",
-  "FloodAll"
+  "FloodAll",
+  "Inject"
  ],
  "blue_action_names": [
   "Sleep",
@@ -124,53 +121,55 @@
   "RetakeRandom",
   "BlockSuspicious",
   "AllowTraffic",
-  "DeployDecoy"
+  "DeployDecoy",
+  "Failsafe"
  ],
  "defense": {
   "detector": "multisensor",
   "response": "safe_mode",
-  "comp_F1": 0.866,
+  "comp_F1": 0.431,
   "jam_F1": 1.0,
-  "gps_F1": 0.968,
+  "gps_F1": 0.963,
   "link_drop_F1": 0.0,
   "snr_poison_F1": 0.0,
   "bw_drain_F1": 0.0,
   "gps_err_before": 89.1,
-  "gps_err_after": 6.78
+  "gps_err_after": 8.5
  },
  "metrics": {
-  "final_compromise": 0.856,
-  "peak_compromise": 0.856,
-  "time_to_first_compromise": 0.0,
-  "compromise_auc": 0.568,
-  "blue_reward_total": -547.2,
-  "recovered": 0.6,
-  "comp_F1": 0.866,
+  "final_compromise": 0.037,
+  "peak_compromise": 0.13,
+  "time_to_first_compromise": 1.333,
+  "compromise_auc": 0.032,
+  "blue_reward_total": -59.667,
+  "recovered": 9.667,
+  "comp_F1": 0.431,
   "jam_F1": 1.0,
-  "gps_F1": 0.968,
+  "gps_F1": 0.963,
   "link_drop_F1": 0.0,
   "snr_poison_F1": 0.0,
   "bw_drain_F1": 0.0,
   "gps_err_before": 89.1,
-  "gps_err_after": 6.78,
-  "attack_score": 0.639,
-  "defense_score": 0.462,
-  "availability": 0.404
+  "gps_err_after": 8.5,
+  "attack_score": 0.401,
+  "defense_score": 0.937,
+  "availability": 0.881,
+  "D_mult": 0.851
  },
  "metrics_std": {
-  "final_compromise": 0.044,
-  "peak_compromise": 0.044,
-  "time_to_first_compromise": 0.0,
-  "compromise_auc": 0.06,
-  "blue_reward_total": 35.712,
-  "recovered": 0.8,
-  "comp_F1": 0.01,
+  "final_compromise": 0.026,
+  "peak_compromise": 0.026,
+  "time_to_first_compromise": 1.886,
+  "compromise_auc": 0.012,
+  "blue_reward_total": 44.078,
+  "recovered": 2.357,
+  "comp_F1": 0.056,
   "jam_F1": 0.0,
-  "gps_F1": 0.006,
+  "gps_F1": 0.0,
   "link_drop_F1": 0.0,
   "snr_poison_F1": 0.0,
   "bw_drain_F1": 0.0,
   "gps_err_before": 0.0,
-  "gps_err_after": 2.107
+  "gps_err_after": 0.0
  }
 }

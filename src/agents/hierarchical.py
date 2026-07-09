@@ -97,7 +97,7 @@ class HierarchicalBlue(BlueBrainBase):
         self._last_call_comp: int = 0       # compromised count at last LLM call
         self._last_call_t: int = -99
 
-    # ── Hub detection ──────────────────────────────────────────────────────────
+    # Hub detection
 
     def _detect_hubs(self, ctx: dict) -> list[int]:
         """Return top-K drones by live link count (connectivity degree)."""
@@ -108,7 +108,7 @@ class HierarchicalBlue(BlueBrainBase):
         degrees = {i: int(link[i]) for i in range(self.n)}
         return sorted(degrees, key=lambda x: -degrees[x])[:self.n_hubs]
 
-    # ── Role classification ────────────────────────────────────────────────────
+    # Role classification
 
     def _get_role(self, drone_id: int, ctx: dict) -> str:
         if drone_id in ctx["compromised"]:
@@ -119,7 +119,7 @@ class HierarchicalBlue(BlueBrainBase):
             return "leaf"
         return "safe"
 
-    # ── State abstraction ──────────────────────────────────────────────────────
+    # State abstraction
 
     def _abstract_state(self, ctx: dict) -> dict:
         """Compress raw obs to a tiny JSON the LLM can parse quickly."""
@@ -152,7 +152,7 @@ class HierarchicalBlue(BlueBrainBase):
             "current_stance":      self.stance,
         }
 
-    # ── LLM trigger ───────────────────────────────────────────────────────────
+    # LLM trigger
 
     def _should_call_llm(self, ctx: dict) -> bool:
         if self.llm_calls >= self.llm_budget:
@@ -169,7 +169,7 @@ class HierarchicalBlue(BlueBrainBase):
                     return True
         return False
 
-    # ── Claude Commander ───────────────────────────────────────────────────────
+    # Claude Commander
 
     def _call_commander(self, abstract: dict) -> dict:
         if not llm.available():
@@ -236,7 +236,7 @@ class HierarchicalBlue(BlueBrainBase):
 
         return {"stance": stance, "weights": weights}
 
-    # ── Main decision interface ────────────────────────────────────────────────
+    # Main decision interface
 
     def team_decide(self, ctx: dict, agents: list[str]) -> list[int]:
         """Per-drone action ids for all live agents this step.
@@ -284,7 +284,7 @@ class HierarchicalBlue(BlueBrainBase):
         self.memory[-1]["llm_calls"] = self.llm_calls
 
 
-# ══════════════════════════════════════════════ Ablation variants ══════════════
+# Ablation variants
 
 class HierNoStance(HierarchicalBlue):
     """Ablation A: per-drone role dispatch, but stance is always NORMAL.
