@@ -51,10 +51,13 @@
 |---|---|---|
 | **attack_capec_kb.json** | **공격 지식DB.** ATT&CK Enterprise(691)+ICS(83)+Mobile(124)+CAPEC(558) = **1456 기법**. 각 기법의 이름·설명·탐지·전술 | 검색 대상 |
 | **drone_crosswalk.json** | **관측→공격 매핑표(핵심).** 17신호(SNR↓→T1498 등), OSI 계층별. ATT&CK엔 없는 "징후→공격" 연결을 우리가 만든 것 | RAG-A의 뇌 |
-| **heldout_procedure_test.json** | **검증셋.** 실제 위협그룹이 기법 쓴 서술 16k개(라벨 있음). novel 표현 일반화 측정용 | 검증 |
-| enterprise/ics/mobile-attack-18.1.json | ATT&CK 원본 STIX (v18.1) | 아카이브 |
-| capec_latest.xml | CAPEC 원본 | 아카이브 |
-| attack_v18.1_tfidf.pkl | TF-IDF 벡터 인덱스(프로토타입) | 인덱스 |
+| **attack_index.npz** | **임베딩 인덱스(★).** KB 1456 + 크로스워크 17을 all-MiniLM으로 미리 임베딩(E 1456×384). 로드 시 즉석 임베딩 생략 → 빠름. (RAG-B의 d3fend_index.npz와 동일 역할) | 인덱스 |
+| **response_procedures.json** | NIST/D3FEND attack_class별 정식 대응절차 | 절차 |
+| **scenario_attack_class.json** | 시나리오별 attack_class(precompute) | 참조 |
+| **heldout_procedure_test.json** | **검증셋.** 실제 위협그룹이 기법 쓴 서술 16k개(라벨). novel 일반화 측정 | 검증 |
+| ~~STIX 원본·capec.xml·tfidf.pkl~~ | 원시덤프·TF-IDF 프로토타입 — **레포 미포함**(재다운로드/파생) | 제외 |
+
+> ⚠️ 다른 임베딩 모델(BGE-M3 등)을 쓰면 `attack_index.npz`(all-MiniLM 기준)는 무시되고 즉석 재임베딩됨. 프로덕션 모델 바꾸면 인덱스도 재생성 필요.
 
 **★왜 KB를 4개 도메인 합쳤나:**
 - Enterprise만으론 **드론 공격(재밍·GPS·제어조작)** 이 약함.

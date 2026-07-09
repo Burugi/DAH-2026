@@ -21,18 +21,24 @@ _COMP_TAC = {"lateral-movement", "execution", "privilege-escalation",
 
 
 import os
-_HERE = os.path.dirname(os.path.abspath(__file__))
+_DATA = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'rag_data')
+_DEFAULT_MODEL = "sentence-transformers/all-MiniLM-L6-v2"
 
 
 class RagA:
-    def __init__(self, model="sentence-transformers/all-MiniLM-L6-v2"):
-        self.kb = json.load(open(os.path.join(_HERE, 'attack_capec_kb.json'), encoding='utf-8'))
-        self.xw = json.load(open(os.path.join(_HERE, 'drone_crosswalk.json'), encoding='utf-8'))
+    def __init__(self, model=_DEFAULT_MODEL):
+        self.kb = json.load(open(os.path.join(_DATA, 'attack_capec_kb.json'), encoding='utf-8'))
+        self.xw = json.load(open(os.path.join(_DATA, 'drone_crosswalk.json'), encoding='utf-8'))
         self.ids = list(self.kb.keys())
-        self.m = SentenceTransformer(model)
-        corpus = [f"{self.kb[i]['name']}. {self.kb[i]['description']} {self.kb[i].get('detection','')}" for i in self.ids]
-        self.E = self.m.encode(corpus, normalize_embeddings=True, batch_size=64)
-        self.xwE = self.m.encode([x['itext'] for x in self.xw], normalize_embeddings=True)
+        self.m = SentenceTransformer(model)          # 쿼리 임베딩용(항상 로드)
+        idx = os.path.join(_DATA, 'attack_index.npz')
+        if model == _DEFAULT_MODEL and os.path.exists(idx):
+            d = np.load(idx, allow_pickle=True)      # ★미리 계산된 KB 인덱스 로드(빠름)
+            self.E, self.xwE = d['E'], d['xwE']
+        else:                                        # 다른 모델(BGE-M3 등)이면 즉석 임베딩
+            corpus = [f"{self.kb[i]['name']}. {self.kb[i]['description']} {self.kb[i].get('detection','')}" for i in self.ids]
+            self.E = self.m.encode(corpus, normalize_embeddings=True, batch_size=64)
+            self.xwE = self.m.encode([x['itext'] for x in self.xw], normalize_embeddings=True)
 
     def _classify(self, tech, matched):
         """공격 클래스 유도: 재밍 / 비감염(무결성) / 감염 / (호출부에서 unknown)."""
