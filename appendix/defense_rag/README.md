@@ -76,7 +76,12 @@ env `DEFENSE_RAG_LLM_MODEL`로 변경)가 후보 방어 행동 중 하나를 골
 규칙 기반으로 폴백(오프라인 시연 보장). 출력의 `llm_used`로 어느 경로였는지 표시.
 
 ## 남은 일 (합의 필요, PLAN §5-B/C)
-- B4 통합 테스트 — 탐지(RAG-A) 실제 output 연결
 - LLM 훅 **라이브 호출 검증** — 현재 크레덴셜 없어 오프라인만 검증됨
-- D3FEND의 IT 편향으로 드론/GPS/DoS 관측은 벡터 점수가 낮음 → 도메인 힌트 보강(옵션)
-- ATLAS 노드 KB 포함 확인 (A11 적대적 ML)
+- D3FEND의 IT 편향으로 드론/GPS/DoS 관측은 벡터 점수가 낮음(0.2~0.46) → 도메인 힌트 보강(옵션)
+
+완료된 항목:
+- ~~B4 통합 테스트~~ ✅ RAG-A 실제 output 연결 완료 — `attack_rag/integration_test.py`
+  3/3 통과 (abstain → raw 관측 벡터 폴백 포함)
+- ~~ATLAS 노드 KB 포함 확인~~ ✅ 확인 결과 KB(271기법)·매핑에 ATLAS(AML.*) 없음.
+  단 A11 시나리오는 일반 Enterprise T-code(T1562/T1565/T1036)만 쓰고 셋 다
+  직접매핑이 없어 벡터 폴백으로 처리됨 — 하이브리드 설계상 의도된 경로.
