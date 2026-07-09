@@ -1,7 +1,7 @@
-# DroneSwarm 공·방 Lab — 3×3 에이전트 비교
+# DroneSwarm 공·방 시뮬레이션
 
-CybORG DroneSwarm(CAGE Challenge 3) 위에서 **사이버 공격(red)과 방어(blue)**를 드론 군집에
-대해 시뮬레이션하고, **어떤 의사결정 방식이 가장 강한지**를 평가하는 소형 로컬 실험 도구.
+CybORG DroneSwarm(CAGE Challenge 3) 위에서 사이버 공격(red)과 방어(blue)를 드론 군집에
+대해 시뮬레이션하고, 어떤 의사결정 방식이 가장 강한지를 평가하는 소형 로컬 실험 도구.
 
 ## 개요
 
