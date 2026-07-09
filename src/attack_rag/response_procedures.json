@@ -1,0 +1,19 @@
+{
+  "_source": "NIST SP 800-61r2/r3, MITRE D3FEND, UAV security surveys (public)",
+  "_key_rule": "active confirmed compromise -> containment-first (Isolate->Evict). observe-first is opt-in exception, never default.",
+  "compromise": {"posture":"escalating/containment-first","first_verb":"Isolate/Block","contain_first":true,
+    "procedure":["Detect","Analyse(triage)","Isolate/Block(cut spread+C2)","Evict/RemoveSessions","Eradicate+Reflash","Restore+re-attest"],
+    "rationale":"propagating foothold; dwell=swarm blast radius (NIST 3.3.1; D3FEND Isolate->Evict)"},
+  "non_compromise_probing": {"posture":"observe-first+harden","first_verb":"Monitor/Detect","contain_first":false,
+    "procedure":["Baseline+attest","Detect shift","Analyse","Increase monitoring/throttle/deceive","Harden"],
+    "rationale":"no state change (adversarial-ML probing, side-channel) -> detect+strengthen"},
+  "non_compromise_tamper": {"posture":"escalating/containment-first","first_verb":"Isolate/Block+Failsafe","contain_first":true,
+    "procedure":["Attest hashes","Detect mismatch","Quarantine model/pipeline","Failsafe mode","Rollback signed good","Restore+harden"],
+    "rationale":"firmware tamper / prompt-injection = control-loop integrity broken (SI-7)"},
+  "jamming": {"posture":"failsafe/resilience","first_verb":"Failsafe/Harden","contain_first":false,
+    "procedure":["Monitor RF/GNSS","Detect SNR collapse/spoof divergence","Failsafe(INS/freq-hop/tighten autonomy)","Retake autonomous mission/RTB","Locate+suppress source","Restore comms"],
+    "rationale":"external threat, no host to evict -> preserve availability then locate (UAV survey)"},
+  "unknown": {"posture":"conservative containment","first_verb":"Monitor->Isolate","contain_first":true,
+    "procedure":["Elevate monitoring+snapshot","Classify vs baselines","Predefined default containment(isolate/safe-mode)","Escalate to operator","Route to matched class","Restore+feed indicators back"],
+    "rationale":"NIST 3.3.1: act on predetermined strategy under ambiguity, never indefinite passive"}
+}

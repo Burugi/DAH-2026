@@ -1,0 +1,37 @@
+flowchart TB
+    OBS["관측 (sim/실환경)<br/>SNR · GPS · 세션 · 확산패턴"]
+
+    subgraph L1["① 느린 전략층 — RAG (별도 env, async)"]
+        direction TB
+        RA["RAG-A ★개선<br/>관측 → 공격유형(ATT&CK)<br/>+ attack_class {감염·비감염·재밍·unknown}<br/>+ abstention"]
+        RB["RAG-B / NIST·D3FEND ★개선<br/>클래스별 정식 대응절차<br/>(response_procedures.json)"]
+        RA --> RB
+        KBA[("ATT&CK KB 1456")]
+        KBB[("D3FEND + NIST 절차")]
+        RA -.벡터검색.-> KBA
+        RB -.근거.-> KBB
+    end
+
+    subgraph L2["② Posture Router ★신규 — 얇은 브릿지 (행동결정 X)"]
+        direction TB
+        RT["attack_class → 자세 결정<br/>감염/변조/unknown → 봉쇄우선<br/>재밍 → 복원력(FP회피)<br/>+ 항상 설명로그"]
+    end
+
+    subgraph L3["③ 빠른 전술층 — HVT / reach2 (CybORG env, 매스텝)"]
+        direction TB
+        HV["belief-검증-재장악<br/>드론별 정밀 봉쇄 실행"]
+    end
+
+    OBS --> RA
+    RB -->|"attack_class + posture"| RT
+    RT -->|"자세 플래그만 전달"| HV
+    HV --> ACT["CybORG blue 행동 (0-9)<br/>방어 실행"]
+
+    classDef obs fill:#18222e,stroke:#2c3a4b,color:#e9eef4;
+    classDef rag fill:#2a220f,stroke:#f2b544,color:#f7e4b8;
+    classDef route fill:#1f1830,stroke:#a98bf0,color:#e5dcfa;
+    classDef hvt fill:#12211f,stroke:#38d0c4,color:#d8f3ef;
+    class OBS obs;
+    class RA,RB,KBA,KBB rag;
+    class RT route;
+    class HV,ACT hvt;
