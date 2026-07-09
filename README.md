@@ -79,6 +79,10 @@ pip install -r requirements.txt
 python src/score.py --scenario A17 --recall 0.75 --fp 0.1 --seeds 5
 python src/score.py --scenario A17 --log steps.csv    # step별 상태 CSV
 
+# 실행을 기록해 대시보드로 보기 (데모용, docs/demo.md 참고)
+python src/record.py --scenario A17 --recall 0.75 --fp 0.1
+python src/viz/dashboard.py results/rag_guided_A17_r0.75_fp0.1   # -> dashboard.html
+
 # 시각화 — docs/sample_run/ 샘플은 CybORG 없이도 동작
 python src/viz/dashboard.py docs/sample_run --png   # dashboard.html + 프리뷰 PNG
 python src/viz/render.py   docs/sample_run --gif    # 함대 애니메이션 GIF

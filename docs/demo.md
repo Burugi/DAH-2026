@@ -10,11 +10,35 @@ python src/viz/dashboard.py docs/sample_run --png   # -> dashboard.html + dashbo
 python src/viz/render.py docs/sample_run --gif      # -> figs/animation.gif
 ```
 
-HVT 방어점수를 직접 채점하려면 `score.py`를 쓴다(대시보드 번들은 만들지 않고 점수·step 상태만 출력).
+방어점수만 직접 채점하려면 `score.py`를 쓴다(대시보드 번들은 만들지 않고 점수·step 상태만 출력).
 
 ```bash
-python src/score.py --model hvt --scenario A1                  # 방어 점수
-python src/score.py --model hvt --scenario A1 --log steps.csv  # step별 상태 CSV
+python src/score.py --scenario A1                  # 방어 점수 (기본 모델 = HVT+RAG)
+python src/score.py --scenario A1 --log steps.csv  # step별 상태 CSV
+```
+
+## 직접 실행해 기록하기 (HVT+RAG 데모)
+
+`record.py`가 방어 모델 실행을 `results/<run_id>/` 번들로 저장해, 위 시각화 도구를
+샘플이 아닌 **방금 돌린 실행**에 그대로 쓸 수 있다 (데모 영상 녹화용).
+
+```bash
+# 1) 실행 기록 (기본 모델 = rag-guided(HVT+RAG) · 옵션: --model hvt · reach2)
+python src/record.py --scenario A17 --recall 0.75 --fp 0.1
+
+# 2) 대시보드 HTML(인터랙티브) + 프리뷰 PNG + 애니메이션 GIF
+python src/viz/dashboard.py results/rag_guided_A17_r0.75_fp0.1
+python src/viz/dashboard.py results/rag_guided_A17_r0.75_fp0.1 --png
+python src/viz/render.py   results/rag_guided_A17_r0.75_fp0.1 --gif
+
+# 3) 브라우저로 열기 (재생/일시정지·스크럽)
+open results/rag_guided_A17_r0.75_fp0.1/dashboard.html      # macOS
+```
+
+RAG 검색 파이프라인 자체(관측→RAG-A→RAG-B 추천)를 터미널로 보여주려면 (별도 임베딩 env):
+
+```bash
+cd appendix && python -m attack_rag.integration_test
 ```
 
 **대시보드 프리뷰** — 한 화면에 함대 맵 + 공격/방어 점수 곡선 + 전술 로그.
