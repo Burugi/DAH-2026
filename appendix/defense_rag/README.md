@@ -19,21 +19,25 @@
 ## 구성
 | 파일 | 역할 | Task |
 |---|---|---|
-| `data/download_data.sh` | D3FEND 공식 덤프 다운로드 | A1 |
+| `data/download_data.sh` | D3FEND 공식 덤프 다운로드 (원본, 미커밋) | A1 |
+| `rag_data/` | 파생 산출물·임베딩 인덱스 전용 폴더 (커밋됨) | — |
 | `build_kb.py` | 덤프 파싱 → 기법 271개 + ATT&CK 매핑 325개 | A1·A2 |
-| `index.py` | 기법 임베딩 → numpy 벡터 인덱스 + 검색 | A3 |
+| `index.py` | LangChain 청킹 → 임베딩 → numpy 벡터 인덱스 + 검색 | A3 |
 | `lookup.py` | ATT&CK id → D3FEND 기법 직접 조회 | A4 |
 | `action_map.py` | D3FEND 기법 → CybORG blue 행동 매핑표(초안) | A5 |
 | `pipeline.py` | 탐지 입력 → 추천 행동 e2e | A6 |
 | `verify_c2.py` | C2 역방향 검증 (기법→행동 전수, 죽은행동) | C2 |
 | `llm_hook.py` | 후보 중 LLM 선택 + 근거 (오프라인 폴백) | §9 |
 
+데이터는 두 폴더로 분리 관리한다(attack_rag와 동일 컨벤션):
+- `data/` — D3FEND 원본 덤프(~50MB, 미커밋, `download_data.sh`로 재생성)
+- `rag_data/` — `d3fend_techniques.jsonl` · `attack_to_d3fend.json` · `d3fend_index.npz`
+
 ## 실행 (팀원용 — 바로 돌리기)
-파생 산출물(`d3fend_techniques.jsonl`, `attack_to_d3fend.json`, `d3fend_index.npz`)이
-**저장소에 포함**돼 있어 다운로드·재빌드 없이 바로 실행된다.
+파생 산출물(`rag_data/`)이 **저장소에 포함**돼 있어 다운로드·재빌드 없이 바로 실행된다.
 ```bash
 pip install -r defense_rag/requirements.txt   # sentence-transformers 등 (별도 env 권장)
-cd src
+cd appendix
 python -m defense_rag.pipeline    # mock 입력 e2e 데모
 python -m defense_rag.verify_c2   # 시나리오 23개 매핑 커버리지 검증
 ```
@@ -49,14 +53,19 @@ out = rag.recommend({"detections": [{"technique_id": "T1210", "observation": "..
 KB를 처음부터 다시 만들 때만 필요(원본 덤프 ~50MB, 저장소엔 미포함):
 ```bash
 bash defense_rag/data/download_data.sh   # 공식 덤프 다운로드
-python -m defense_rag.build_kb           # 파싱 → jsonl + json
-python -m defense_rag.index              # 벡터 인덱스 재생성 (.npz)
+python -m defense_rag.build_kb           # 파싱 → rag_data/ jsonl + json
+python -m defense_rag.index              # LangChain 청킹 + 벡터 인덱스 재생성 (rag_data/*.npz)
 ```
 
-## 임베딩
+## 임베딩·청킹
 `sentence-transformers` 로컬 모델 `all-MiniLM-L6-v2`(384d). 최초 1회만 모델
 다운로드 후 완전 오프라인. API 키 불필요. 시뮬레이터(numpy 1.23 고정 py3.11)와
 **별도 프로세스**로 도므로 의존성 충돌 없음.
+
+인덱스 빌드 시 기법 문서를 LangChain `RecursiveCharacterTextSplitter`
+(chunk_size=400자, overlap=60자)로 청크 분할해 임베딩한다(271개 기법 → 274개 청크;
+짧은 정의는 1청크, 긴 정의만 분할). 검색은 청크 단위 유사도를 기법 단위 max로
+집계해 top-k 기법을 반환한다. 청킹 의존성은 빌드 시에만 필요하고 검색은 npz만 읽는다.
 
 ## LLM 훅
 `llm_hook.py`는 `ANTHROPIC_API_KEY`가 있으면 Claude(기본 `claude-sonnet-5`,
