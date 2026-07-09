@@ -1,6 +1,0 @@
-scenario,detector,response,jam_F1,gps_F1,gpsErr_before,gpsErr_after
-baseline,none,none,0.0,0.0,0.0,0.0
-combined,none,none,0.0,0.0,89.1,89.1
-defended,multisensor,safe_mode,1.0,0.963,89.1,8.5
-fsm_red,threshold,isolate,1.0,0.0,107.5,107.5
-passive_blue,none,none,0.0,0.0,89.1,89.1

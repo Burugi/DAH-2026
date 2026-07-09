@@ -1,9 +1,0 @@
-attack,oracle,SMART_v3,classified
-근접,0.0,0.0,predOODA
-도약,0.067,0.011,pred
-랜덤,0.011,0.011,pred
-재밍,0.1,0.3,flat
-장악러시,0.044,0.044,pred
-혼합,0.089,0.122,pred
-rule,0.056,0.156,pred
-rl,0.122,0.1,predOODA

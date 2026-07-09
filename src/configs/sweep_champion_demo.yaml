@@ -1,5 +1,4 @@
-# 챔피언 대시보드 생성용 데모 sweep
-# rule / hier_h2 / hier_h3_tight 비교 대시보드
+# 데모 대시보드 생성용 sweep (rule / hier_h2 / hier_h3_tight 비교)
 name: champion_demo
 env: B
 fleet: {n_uav: 12, n_ugv: 6, grid: 100, max_link: 40}

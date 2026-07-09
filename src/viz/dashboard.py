@@ -213,6 +213,12 @@ def preview_png(run_dir, step=None):
     import matplotlib
     matplotlib.use("Agg")
     import matplotlib.pyplot as plt
+    from matplotlib import font_manager
+    for cand in ("Malgun Gothic", "NanumGothic", "AppleGothic", "Noto Sans CJK KR"):
+        if any(cand == f.name for f in font_manager.fontManager.ttflist):
+            plt.rcParams["font.family"] = cand
+            plt.rcParams["axes.unicode_minus"] = False
+            break
     run_dir = _resolve(run_dir)
     z = np.load(os.path.join(run_dir, "arrays.npz"), allow_pickle=True)
     meta = json.load(open(os.path.join(run_dir, "meta.json"), encoding="utf-8"))
