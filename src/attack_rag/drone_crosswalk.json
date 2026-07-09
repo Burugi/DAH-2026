@@ -1,0 +1,389 @@
+[
+ {
+  "id": "XW01",
+  "layer": "물리/RF",
+  "signal": "SNR 단일 급락",
+  "sim": "snr[i] < snr_thresh(6)",
+  "itext": "radio frequency jamming signal degradation wireless interference denial of service availability",
+  "tcodes": [
+   "T1464",
+   "T1498"
+  ],
+  "candidates": [
+   {
+    "id": "T1464",
+    "name": "Network Denial of Service"
+   },
+   {
+    "id": "T1498",
+    "name": "Network Denial of Service"
+   }
+  ]
+ },
+ {
+  "id": "XW02",
+  "layer": "물리/RF",
+  "signal": "SNR 광역 하락(다수 드론)",
+  "sim": "mean(snr) 급락, jammed>=n_hubs",
+  "itext": "broadband jamming network denial of service flood multiple nodes availability loss",
+  "tcodes": [
+   "T1498",
+   "T0814"
+  ],
+  "candidates": [
+   {
+    "id": "T1498",
+    "name": "Network Denial of Service"
+   },
+   {
+    "id": "T0814",
+    "name": "Denial of Service"
+   }
+  ]
+ },
+ {
+  "id": "XW03",
+  "layer": "물리/RF",
+  "signal": "link 지속 두절",
+  "sim": "link_up[i]=0 지속",
+  "itext": "communication link loss endpoint denial of service disruption unreachable",
+  "tcodes": [
+   "T1499",
+   "T0814"
+  ],
+  "candidates": [
+   {
+    "id": "T1499",
+    "name": "Endpoint Denial of Service"
+   },
+   {
+    "id": "T0814",
+    "name": "Denial of Service"
+   }
+  ]
+ },
+ {
+  "id": "XW04",
+  "layer": "GPS/항법",
+  "signal": "GPS 오차 급증·drift",
+  "sim": "gps_err[i] > gps_thresh(8)",
+  "itext": "GPS spoofing false position navigation manipulation adversary in the middle telemetry falsify",
+  "tcodes": [
+   "T1565",
+   "T1557",
+   "CAPEC-627",
+   "CAPEC-628"
+  ],
+  "candidates": [
+   {
+    "id": "T1565",
+    "name": "Data Manipulation"
+   },
+   {
+    "id": "T1557",
+    "name": "Adversary-in-the-Middle"
+   },
+   {
+    "id": "CAPEC-627",
+    "name": "Counterfeit GPS Signals"
+   },
+   {
+    "id": "CAPEC-628",
+    "name": "Carry-Off GPS Attack"
+   }
+  ]
+ },
+ {
+  "id": "XW05",
+  "layer": "GPS/항법",
+  "signal": "GPS lock 상실",
+  "sim": "gps_err 급증 + snr 정상",
+  "itext": "GPS jamming denial navigation signal loss location unavailable",
+  "tcodes": [
+   "T1464",
+   "T1565"
+  ],
+  "candidates": [
+   {
+    "id": "T1464",
+    "name": "Network Denial of Service"
+   },
+   {
+    "id": "T1565",
+    "name": "Data Manipulation"
+   }
+  ]
+ },
+ {
+  "id": "XW06",
+  "layer": "링크/토폴로지",
+  "signal": "토폴로지 분할(고립 증가)",
+  "sim": "isolated 급증, components 분열",
+  "itext": "network partition connectivity denial mesh fragmentation isolation availability",
+  "tcodes": [
+   "T1498",
+   "T0814"
+  ],
+  "candidates": [
+   {
+    "id": "T1498",
+    "name": "Network Denial of Service"
+   },
+   {
+    "id": "T0814",
+    "name": "Denial of Service"
+   }
+  ]
+ },
+ {
+  "id": "XW07",
+  "layer": "네트워크/세션",
+  "signal": "신규 red 세션 출현",
+  "sim": "red_owned[i] 신규 True",
+  "itext": "unauthorized session valid account exploitation of remote services public facing application initial access",
+  "tcodes": [
+   "T1078",
+   "T1190",
+   "T1210",
+   "T1563"
+  ],
+  "candidates": [
+   {
+    "id": "T1078",
+    "name": "Valid Accounts"
+   },
+   {
+    "id": "T1190",
+    "name": "Exploit Public-Facing Application"
+   },
+   {
+    "id": "T1210",
+    "name": "Exploitation of Remote Services"
+   },
+   {
+    "id": "T1563",
+    "name": "Remote Service Session Hijacking"
+   }
+  ]
+ },
+ {
+  "id": "XW08",
+  "layer": "네트워크/세션",
+  "signal": "MITM/주입 트래픽",
+  "sim": "비정상 relay·중간자",
+  "itext": "adversary in the middle traffic interception injection manipulation",
+  "tcodes": [
+   "T1557",
+   "T1565"
+  ],
+  "candidates": [
+   {
+    "id": "T1557",
+    "name": "Adversary-in-the-Middle"
+   },
+   {
+    "id": "T1565",
+    "name": "Data Manipulation"
+   }
+  ]
+ },
+ {
+  "id": "XW09",
+  "layer": "확산/웜",
+  "signal": "인접 순차 감염",
+  "sim": "확산: 이웃 red_owned 순차↑",
+  "itext": "lateral movement worm propagation exploitation of remote services software deployment neighbor spread",
+  "tcodes": [
+   "T1021",
+   "T1210",
+   "T1072"
+  ],
+  "candidates": [
+   {
+    "id": "T1021",
+    "name": "Remote Services"
+   },
+   {
+    "id": "T1210",
+    "name": "Exploitation of Remote Services"
+   },
+   {
+    "id": "T1072",
+    "name": "Software Deployment Tools"
+   }
+  ]
+ },
+ {
+  "id": "XW10",
+  "layer": "확산/웜",
+  "signal": "감염 급증(확산율↑)",
+  "sim": "comp count 가속 증가",
+  "itext": "rapid lateral movement propagation cascade compromise spread remote services",
+  "tcodes": [
+   "T1210",
+   "T1021"
+  ],
+  "candidates": [
+   {
+    "id": "T1210",
+    "name": "Exploitation of Remote Services"
+   },
+   {
+    "id": "T1021",
+    "name": "Remote Services"
+   }
+  ]
+ },
+ {
+  "id": "XW11",
+  "layer": "제어/ICS",
+  "signal": "비정상 제어명령",
+  "sim": "인가되지 않은 command",
+  "itext": "unauthorized command message manipulation of control industrial actuator hijack",
+  "tcodes": [
+   "T0855",
+   "T0831"
+  ],
+  "candidates": [
+   {
+    "id": "T0855",
+    "name": "Unauthorized Command Message"
+   },
+   {
+    "id": "T0831",
+    "name": "Manipulation of Control"
+   }
+  ]
+ },
+ {
+  "id": "XW12",
+  "layer": "제어/ICS",
+  "signal": "파라미터 변조",
+  "sim": "제어 파라미터 이상",
+  "itext": "modify parameter control logic tampering setpoint manipulation",
+  "tcodes": [
+   "T0836",
+   "T0831"
+  ],
+  "candidates": [
+   {
+    "id": "T0836",
+    "name": "Modify Parameter"
+   },
+   {
+    "id": "T0831",
+    "name": "Manipulation of Control"
+   }
+  ]
+ },
+ {
+  "id": "XW13",
+  "layer": "펌웨어/공급망",
+  "signal": "부팅/펌웨어 이상",
+  "sim": "pre-boot 단계 변조",
+  "itext": "firmware pre-OS boot tampering supply chain compromise persistence bootkit",
+  "tcodes": [
+   "T1542",
+   "T1195"
+  ],
+  "candidates": [
+   {
+    "id": "T1542",
+    "name": "Pre-OS Boot"
+   },
+   {
+    "id": "T1195",
+    "name": "Supply Chain Compromise"
+   }
+  ]
+ },
+ {
+  "id": "XW14",
+  "layer": "방어무력화",
+  "signal": "탐지·방어 비활성",
+  "sim": "detector/response 무력화",
+  "itext": "impair defenses disable security tooling detection evasion",
+  "tcodes": [
+   "T1562"
+  ],
+  "candidates": [
+   {
+    "id": "T1562",
+    "name": "Impair Defenses"
+   }
+  ]
+ },
+ {
+  "id": "XW15",
+  "layer": "자격증명",
+  "signal": "자격증명 접근 흔적",
+  "sim": "저장 자격증명 노출",
+  "itext": "unsecured credentials access stored secrets theft",
+  "tcodes": [
+   "T1552"
+  ],
+  "candidates": [
+   {
+    "id": "T1552",
+    "name": "Unsecured Credentials"
+   }
+  ]
+ },
+ {
+  "id": "XW16",
+  "layer": "영향",
+  "signal": "서비스/기능 중단",
+  "sim": "드론 기능 정지",
+  "itext": "service stop endpoint denial shutdown loss of availability disruption",
+  "tcodes": [
+   "T1489",
+   "T1499",
+   "T0814"
+  ],
+  "candidates": [
+   {
+    "id": "T1489",
+    "name": "Service Stop"
+   },
+   {
+    "id": "T1499",
+    "name": "Endpoint Denial of Service"
+   },
+   {
+    "id": "T0814",
+    "name": "Denial of Service"
+   }
+  ]
+ },
+ {
+  "id": "XW17",
+  "layer": "은폐",
+  "signal": "정상 위장·난독(스텔스)",
+  "sim": "정상 heartbeat 유지하며 은폐",
+  "itext": "masquerading obfuscated files legitimate traffic evasion stealth false heartbeat",
+  "tcodes": [
+   "T1036",
+   "T1027",
+   "T0849",
+   "T1406"
+  ],
+  "candidates": [
+   {
+    "id": "T1036",
+    "name": "Masquerading"
+   },
+   {
+    "id": "T1027",
+    "name": "Obfuscated Files or Information"
+   },
+   {
+    "id": "T0849",
+    "name": "Masquerading"
+   },
+   {
+    "id": "T1406",
+    "name": "Obfuscated Files or Information"
+   }
+  ]
+ }
+]

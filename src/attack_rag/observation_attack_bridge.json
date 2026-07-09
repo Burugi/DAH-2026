@@ -1,0 +1,192 @@
+[
+ {
+  "signal": "SNR 급락 / link_up=0",
+  "obs": "드론 신호세기 급감·통신 두절",
+  "indicator_text": "network denial of service availability flood block resource endpoint disruption communication loss",
+  "tcodes": [
+   "T1498",
+   "T1499"
+  ],
+  "candidates": [
+   {
+    "id": "T1498",
+    "name": "Network Denial of Service"
+   },
+   {
+    "id": "T1499",
+    "name": "Endpoint Denial of Service"
+   }
+  ]
+ },
+ {
+  "signal": "GPS 오차·drift",
+  "obs": "위치 텔레메트리 비정상 이동·표류",
+  "indicator_text": "GPS spoofing false position telemetry manipulation navigation",
+  "tcodes": [
+   "T1565",
+   "T1557"
+  ],
+  "candidates": [
+   {
+    "id": "T1565",
+    "name": "Data Manipulation"
+   },
+   {
+    "id": "T1557",
+    "name": "Adversary-in-the-Middle"
+   }
+  ]
+ },
+ {
+  "signal": "비정상 red 세션 출현",
+  "obs": "인가되지 않은 세션·원격 접근",
+  "indicator_text": "unauthorized session remote access valid account compromise exploitation",
+  "tcodes": [
+   "T1078",
+   "T1190",
+   "T1210"
+  ],
+  "candidates": [
+   {
+    "id": "T1078",
+    "name": "Valid Accounts"
+   },
+   {
+    "id": "T1190",
+    "name": "Exploit Public-Facing Application"
+   },
+   {
+    "id": "T1210",
+    "name": "Exploitation of Remote Services"
+   }
+  ]
+ },
+ {
+  "signal": "이웃으로 감염 확산",
+  "obs": "인접 드론 순차 감염·측면 이동",
+  "indicator_text": "lateral movement worm propagation neighbor infection remote services deployment",
+  "tcodes": [
+   "T1021",
+   "T1210",
+   "T1072"
+  ],
+  "candidates": [
+   {
+    "id": "T1021",
+    "name": "Remote Services"
+   },
+   {
+    "id": "T1210",
+    "name": "Exploitation of Remote Services"
+   },
+   {
+    "id": "T1072",
+    "name": "Software Deployment Tools"
+   }
+  ]
+ },
+ {
+  "signal": "펌웨어/부팅 이상",
+  "obs": "부팅 단계 변조·공급망 의심",
+  "indicator_text": "firmware pre-OS boot tampering supply chain compromise persistence",
+  "tcodes": [
+   "T1542",
+   "T1195"
+  ],
+  "candidates": [
+   {
+    "id": "T1542",
+    "name": "Pre-OS Boot"
+   },
+   {
+    "id": "T1195",
+    "name": "Supply Chain Compromise"
+   }
+  ]
+ },
+ {
+  "signal": "자격증명 접근 흔적",
+  "obs": "저장 자격증명 노출·탈취",
+  "indicator_text": "unsecured credentials access theft stored secrets",
+  "tcodes": [
+   "T1552"
+  ],
+  "candidates": [
+   {
+    "id": "T1552",
+    "name": "Unsecured Credentials"
+   }
+  ]
+ },
+ {
+  "signal": "방어 무력화 징후",
+  "obs": "탐지·방어 기능 비활성",
+  "indicator_text": "impair defenses disable detection security tooling",
+  "tcodes": [
+   "T1562"
+  ],
+  "candidates": [
+   {
+    "id": "T1562",
+    "name": "Impair Defenses"
+   }
+  ]
+ },
+ {
+  "signal": "서비스 중단",
+  "obs": "드론 기능·서비스 정지",
+  "indicator_text": "service stop endpoint denial shutdown disruption",
+  "tcodes": [
+   "T1489",
+   "T1499"
+  ],
+  "candidates": [
+   {
+    "id": "T1489",
+    "name": "Service Stop"
+   },
+   {
+    "id": "T1499",
+    "name": "Endpoint Denial of Service"
+   }
+  ]
+ },
+ {
+  "signal": "위장·난독",
+  "obs": "정상 위장 트래픽·난독 페이로드",
+  "indicator_text": "masquerading obfuscated files legitimate heartbeat evasion",
+  "tcodes": [
+   "T1036",
+   "T1027"
+  ],
+  "candidates": [
+   {
+    "id": "T1036",
+    "name": "Masquerading"
+   },
+   {
+    "id": "T1027",
+    "name": "Obfuscated Files or Information"
+   }
+  ]
+ },
+ {
+  "signal": "데이터 유출",
+  "obs": "C2·대체채널로 데이터 반출",
+  "indicator_text": "exfiltration C2 channel alternative protocol data theft",
+  "tcodes": [
+   "T1041",
+   "T1048"
+  ],
+  "candidates": [
+   {
+    "id": "T1041",
+    "name": "Exfiltration Over C2 Channel"
+   },
+   {
+    "id": "T1048",
+    "name": "Exfiltration Over Alternative Protocol"
+   }
+  ]
+ }
+]

@@ -1,0 +1,23 @@
+flowchart TB
+    subgraph BEFORE["개선 전 (naive) — 방어점수 0.599"]
+        direction LR
+        O1["관측<br/>obs"] --> A1["RAG-A<br/>기법ID만"]
+        A1 --> B1["RAG-B<br/>top-1 tactic 로 행동선택<br/>기본값 = Monitor"]
+        B1 --> S1["sim 직접 실행"]
+        S1 --> R1["과소 escalation<br/>감염에도 관측만<br/>→ 확산 방치"]
+    end
+    subgraph AFTER["개선 후 (v2) — 방어점수 0.931 (HVT 동률)"]
+        direction LR
+        O2["관측<br/>obs"] --> A2["RAG-A ★개선<br/>기법ID + attack_class<br/>+ abstention(unknown)"]
+        A2 --> P2["Posture Router ★신규<br/>NIST/D3FEND 정식절차<br/>감염→봉쇄 · 재밍→복원력<br/>unknown→보수봉쇄"]
+        P2 --> H2["HVT / reach2 실행<br/>라이브탐지 봉쇄우선<br/>+ 재밍 FP재장악 회피"]
+        H2 --> R2["HVT급 방어<br/>+ novel 5종 커버<br/>+ 설명가능성"]
+    end
+    BEFORE -.개선.-> AFTER
+
+    classDef bad fill:#2a1a1a,stroke:#ec6a5c,color:#f4d5d0;
+    classDef good fill:#12211f,stroke:#38d0c4,color:#d8f3ef;
+    classDef star fill:#2a220f,stroke:#f2b544,color:#f7e4b8;
+    class O1,A1,B1,S1,R1 bad;
+    class O2,H2,R2 good;
+    class A2,P2 star;
