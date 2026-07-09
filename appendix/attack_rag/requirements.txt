@@ -2,5 +2,6 @@
 # ⚠️ CybORG sim 환경(numpy==1.23 고정, py3.11)과 별도 env에 설치할 것 —
 #    sentence-transformers가 torch/numpy를 끌어와 sim 환경과 충돌할 수 있음.
 sentence-transformers>=2.2   # 임베딩(all-MiniLM 프로토타입 / BAAI/bge-m3 프로덕션). 최초 1회 자동 다운로드
+langchain-text-splitters     # KB 문서 청킹(RecursiveCharacterTextSplitter) — 인덱스 빌드 시에만 필요
 numpy                        # 벡터 연산
 # FlagEmbedding             # (선택) BGE-M3 하이브리드(dense+sparse) 검색

@@ -16,6 +16,10 @@
 ```
 - **메인:** 아는 징후 → 크로스워크(결정적 매칭) → 정확.
 - **fallback:** 크로스워크 밖 novel → raw 설명 그대로 벡터검색.
+- **인덱스:** KB 문서를 LangChain `RecursiveCharacterTextSplitter`(1000자/overlap 100,
+  임베딩 모델 윈도 기준)로 청킹 후 임베딩, 검색은 청크 유사도를 기법 단위 max로 집계.
+  현재 KB는 전 문서가 윈도 안이라 1문서=1청크(잘림 없음); 윈도 초과 문서만 자동 분할.
+  ※ heldout 실측: 윈도보다 잘게(400자) 쪼개면 recall@5 0.533→0.479 하락 → 1000자 채택.
 
 ## 출력 (개선 반영)
 ```python
@@ -41,6 +45,7 @@ o = r.identify("SNR 급락 + 인접 순차 감염", target_host=[3, 5])
 | 파일 | 역할 |
 |---|---|
 | `rag_a.py` | 파이프라인 (관측→공격유형+attack_class) |
+| `build_index.py` | rag_data/attack_index.npz 재생성 (LangChain 청킹+임베딩, 1회) |
 | `embed_validate.py` | held-out 검증 (`python embed_validate.py BAAI/bge-m3`) |
 | `integration_test.py` | RAG-A→RAG-B end-to-end (defense_rag 필요) |
 | `attack_capec_kb.json` | 공격 지식DB (ATT&CK Ent/ICS/Mobile + CAPEC = 1456 기법, v18.1) |
