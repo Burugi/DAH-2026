@@ -50,9 +50,9 @@ DefensePolicy 인터페이스(reset/step)를 따르는 방어 모델들. 핵심 
 
 | 파일 | 클래스 | 방식 | 방어점수 |
 |---|---|---|:--:|
-| `agents/hvt.py` | HVTDefense | belief 예측 + 반사실 검증(Δ>τ) 통과분만 재장악 → 오탐 회피 | ~0.92 (메인) |
+| `agents/hvt.py` | HVTDefense | belief 예측 + 반사실 검증(Δ>τ) 통과분만 재장악 → 오탐 회피 | ~0.91 (메인) |
 | `agents/reach2.py` | ReachV2 | 탐지된 감염 전부 재장악 + de-jam + relay (단순·견고) | ~0.90 |
-| `appendix/rag_guided.py` | RAGGuidedPolicy | reach2 + 공격유형 자세 라우팅(재밍이면 오탐 재장악 끔) | ~0.93 |
+| `appendix/rag_guided.py` | RAGGuidedPolicy | reach2 + 공격유형 자세 라우팅(재밍이면 오탐 재장악 끔) | ~0.90 |
 
 `rag_guided`는 reach2를 상속하며(HVT 아님) 공격유형(attack_class)을 오프라인 파일에서 읽는다. RAG
 파이프라인(RAG-A·RAG-B)은 sentence-transformers 계열의 별도 env에서 방어 "권고"까지만 생성하고 sim을
