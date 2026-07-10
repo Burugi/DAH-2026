@@ -12,13 +12,13 @@ INK,MUTED,GRID="#1f2733","#5b6875","#e7ebf0"
 OURS,OURS_HI,TEAM,NONE="#3aa89a","#0d6e62","#8492a3","#cc6a5c"
 
 # (모델, 점수, 진영, 출처)  실전조건 채널① recall0.75/fp0.1
-data=[("HVT+RAG (최종)",0.915,"ours_hi"),
-      ("Coordinator",   0.918,"ours"),
-      ("whittle SH",    0.823,"team"),
-      ("Graph",         0.810,"team"),
-      ("EVO",           0.783,"team"),
-      ("hier_h3_tight", 0.735,"team"),
-      ("Rule",          0.731,"team"),
+data=[("HVT+RAG (최종)",0.904,"ours_hi"),
+      ("Coordinator",   0.913,"ours"),
+      ("whittle SH",    0.774,"team"),
+      ("Graph",         0.716,"team"),
+      ("EVO",           0.659,"team"),
+      ("hier_h3_tight", 0.772,"team"),
+      ("Rule",          0.729,"team"),
       ("None (무방어)", 0.398,"none")]
 data.sort(key=lambda x:x[1])                     # 아래→위 오름차순
 labels=[d[0] for d in data]; vals=[d[1] for d in data]
@@ -48,8 +48,8 @@ ax.legend(handles=[Patch(color=OURS_HI,label="본 연구 (최종)"),
                    Patch(color=TEAM,label="팀/기존 모델"),
                    Patch(color=NONE,label="무방어 기준")],
           loc="lower right",frameon=False,fontsize=9.5)
-fig.text(0.5,-0.02,"실전조건: recall 0.75 · fp 0.1 · 미탐/오탐 동시 · 23 시나리오 · seeds 0-4  ·  "
-         "HVT+RAG·None=직접측정(HVT 재현 0.892 ~ LB 0.906 정합), 그외=팀 벤치",
+fig.text(0.5,-0.02,"실전조건 채널①: recall 0.75 · fp 0.1 · k6 · 미탐/오탐 동시  ·  "
+         "예선 보고서 3.4.2 진영별 대표 모델 성능 기준",
          ha="center",fontsize=8.6,color=MUTED)
 plt.tight_layout()
 plt.savefig("model_comparison.png",dpi=170,bbox_inches="tight",facecolor="white")

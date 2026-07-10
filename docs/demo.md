@@ -56,7 +56,7 @@ cd appendix && python -m attack_rag.integration_test
 
 ## 데모 영상
 
-- 링크: https://youtu.be/w4Xyg006Jx0
+- 링크: https://youtu.be/xjl6ewneKW8
 - 구성: ① 노벨 공격 식별(RAG-A→RAG-B) → ② 방어 성능 비교(HVT vs HVT+RAG) → ③ 실전 대시보드(A17)
 
 ## 행동 단독 검증
