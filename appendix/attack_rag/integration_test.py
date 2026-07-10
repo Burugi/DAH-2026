@@ -7,9 +7,12 @@
             → ② RAG-B(D3FEND 검색 → blue 행동 추천)
   RAG-A가 abstain(신뢰도 미달)이면 technique_id 없이 raw 관측만 넘겨
   RAG-B의 벡터 폴백 경로를 태운다(= 'ATT&CK 매칭 실패 시 raw fallback')."""
-import os, sys
+import os, sys, time
 os.environ.setdefault("TOKENIZERS_PARALLELISM", "false")   # LLM 훅 fork 경고 억제 (데모 화면 청결)
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))  # appendix/ 를 path에
+
+# 데모 녹화용 케이스 간 일시정지(초). 끄려면 DEMO_PAUSE=0
+PAUSE = float(os.environ.get("DEMO_PAUSE", "2"))
 from attack_rag.rag_a import RagA
 from defense_rag.pipeline import DefenseRAG
 
@@ -29,7 +32,9 @@ cases = [
 ]
 ok = 0
 for label, obs, host in cases:
-    print(f"\n{'='*70}\n{label}\n[관측] {obs}")
+    print(f"\n{'='*70}\n{label}", flush=True)
+    time.sleep(PAUSE)                       # 녹화용 호흡 — 구분선 뒤 잠시 멈췄다 케이스 출력
+    print(f"[관측] {obs}")
     # ① RAG-A: 관측 → 공격타입 (id + confidence + attack_class)
     a = raga.identify(obs, target_host=host, topk=3)
     top = a["result"][0]
