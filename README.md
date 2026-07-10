@@ -9,6 +9,12 @@ CybORG DroneSwarm(CAGE Challenge 3) 위에서 드론 군집의 사이버 공격(
 - 환경: UAV 12대 + UGV 6대, 100×100 격자.
 - 공격 시나리오 A1~A21은 `src/configs/attack_scenarios.yaml`에 정의(MITRE ATT&CK/D3FEND 태그).
 
+## Docs
+
+[데모 영상 (YouTube)](https://youtu.be/w4Xyg006Jx0) · [아키텍처](docs/architecture.md) ·
+[데모](docs/demo.md) · [시나리오](docs/scenarios.md) ·
+대안 모델 `src/counterpart_models/` · RAG 실험 `appendix/`
+
 ## 실험 설계
 
 - **두 채널** — CybORG가 네트워크 점령(익스플로잇·장악·웜 확산)과 보상을 담당함. CybORG에는 GPS/RF
@@ -94,6 +100,13 @@ docker run --rm -w /app/appendix neuroguard /opt/rag/bin/python -m attack_rag.in
 
 # (선택) LLM 근거 생성 — 키를 넘기면 Claude가 후보 중 선택 + 근거 작성
 docker run --rm -w /app/appendix -e ANTHROPIC_API_KEY neuroguard /opt/rag/bin/python -m attack_rag.integration_test
+
+# 대시보드 생성 — 산출물을 호스트로 받으려면 results/를 볼륨 마운트
+docker run --rm -v "$PWD/results:/app/results" neuroguard \
+  /opt/sim/bin/python src/record.py --scenario A17 --recall 0.75 --fp 0.1
+docker run --rm -v "$PWD/results:/app/results" neuroguard \
+  /opt/sim/bin/python src/viz/dashboard.py results/rag_guided_A17_r0.75_fp0.1
+# -> 호스트의 results/rag_guided_A17_r0.75_fp0.1/dashboard.html 을 브라우저로 열기
 ```
 
 ## 실행
@@ -147,12 +160,6 @@ HVT 대시보드(A1 공급망 웜) — 함대 맵·점수 곡선·전술 로그.
 베이스라인 rule 대 rule 매치업.
 
 ![베이스라인 매치업](docs/example_animation.gif)
-
-## 더 보기
-
-[데모 영상 (YouTube)](https://youtu.be/w4Xyg006Jx0) · [아키텍처](docs/architecture.md) ·
-[데모](docs/demo.md) · [시나리오](docs/scenarios.md) ·
-대안 모델 `src/counterpart_models/` · RAG 실험 `appendix/`
 
 ## License
 
