@@ -15,6 +15,7 @@ python src/viz/render.py docs/sample_run --gif      # -> figs/animation.gif
 ```bash
 python src/score.py --scenario A1                  # 방어 점수 (기본 모델 = HVT+RAG)
 python src/score.py --scenario A1 --log steps.csv  # step별 상태 CSV
+./src/compare_hvt_rag.sh                           # HVT vs HVT+RAG 비교 (데모 영상 수치 재현)
 ```
 
 ## 직접 실행해 기록하기 (HVT+RAG 데모)

@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
-# 장면2: HVT vs HVT+RAG 성능 비교 — 실전조건(미탐 25%·오탐 10%), 5시드.
-# 실행: conda activate dah 후  ./demo_scene2.sh
+# HVT vs HVT+RAG 성능 비교 — 실전조건(미탐 25%·오탐 10%), 5시드.
+# 데모 영상 장면2의 수치 재현용. 실행: conda activate dah 후  ./src/compare_hvt_rag.sh
 cd "$(dirname "$0")"
 
 run() {  # run <model> <scenario> -> 점수만 반환
-  python src/score.py --model "$1" --scenario "$2" --recall 0.75 --fp 0.1 --seeds 5 2>/dev/null \
+  python score.py --model "$1" --scenario "$2" --recall 0.75 --fp 0.1 --seeds 5 2>/dev/null \
     | tail -1 | grep -o '0\.[0-9]*' | head -1
 }
 
