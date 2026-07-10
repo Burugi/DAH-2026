@@ -11,7 +11,7 @@ CybORG DroneSwarm(CAGE Challenge 3) 위에서 드론 군집의 사이버 공격(
 
 ## Docs
 
-[데모 영상 (YouTube)](https://youtu.be/w4Xyg006Jx0) · [아키텍처](docs/architecture.md) ·
+[데모 영상 (YouTube)](https://youtu.be/xjl6ewneKW8) · [아키텍처](docs/architecture.md) ·
 [데모](docs/demo.md) · [시나리오](docs/scenarios.md) ·
 대안 모델 `src/counterpart_models/` · RAG 실험 `appendix/`
 
