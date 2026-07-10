@@ -6,7 +6,7 @@ flowchart TB
         B1 --> S1["sim 직접 실행"]
         S1 --> R1["과소 escalation<br/>감염에도 관측만<br/>→ 확산 방치"]
     end
-    subgraph AFTER["개선 후 (v2) — 방어점수 0.931 (HVT 동률)"]
+    subgraph AFTER["개선 후 (v2) — 방어점수 0.904 (HVT 동률)"]
         direction LR
         O2["관측<br/>obs"] --> A2["RAG-A ★개선<br/>기법ID + attack_class<br/>+ abstention(unknown)"]
         A2 --> P2["Posture Router ★신규<br/>NIST/D3FEND 정식절차<br/>감염→봉쇄 · 재밍→복원력<br/>unknown→보수봉쇄"]

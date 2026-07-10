@@ -16,14 +16,14 @@ TEAL, AMBER, RED, SLATE = "#149e8c", "#e0975a", "#cc6a5c", "#6b7f96"
 
 # ---- 데이터 ----
 systems = ["naive RAG\n(개선 전)", "HVT\n(챔피언)", "개선 RAG\n(v2)"]
-scores  = [0.599, 0.922, 0.931]
+scores  = [0.599, 0.906, 0.904]
 colors1 = [RED, SLATE, TEAL]
 
 scen = [("A19","j",0.042),("A4","j",0.023),("A8","j",0.020),("A1","j",0.019),
         ("A2","j",0.019),("A5","j",0.019),("A9","j",0.019),("A20*","c",0.018),
-        ("A-MV","c",0.018),("A3","j",0.016),("A6","j",0.016),("A7","j",0.016),
+        ("A-CONN","j",0.019),("A3","j",0.016),("A6","j",0.016),("A7","j",0.016),
         ("A13","j",0.016),("A16","j",0.015),("A10","j",-0.012),("A14","j",-0.012),
-        ("A18","j",-0.020),("A17","c",-0.027),("A-CONN","c",-0.029)]
+        ("A-MV","j",-0.012),("A18","j",-0.020),("A17","c",-0.027)]
 scen = [s for s in scen if s[0] != "A20*"]          # 빈attacks 제외(실공격 18)
 scen.sort(key=lambda x: x[2])
 labels = [s[0] for s in scen]
@@ -41,12 +41,12 @@ bars = ax1.bar(x, scores, width=0.62, color=colors1, zorder=3)
 for i, v in enumerate(scores):
     ax1.text(i, v + 0.012, f"{v:.3f}", ha="center", va="bottom",
              fontsize=13, fontweight="bold", color=INK)
-ax1.annotate("", xy=(2, 0.931), xytext=(0, 0.599),
+ax1.annotate("", xy=(2, 0.904), xytext=(0, 0.599),
              arrowprops=dict(arrowstyle="->", color=MUTED, lw=1.6,
                              connectionstyle="arc3,rad=-0.25"))
-ax1.text(1.0, 0.74, "+0.332\n회복", ha="center", va="center", fontsize=11,
+ax1.text(1.0, 0.74, "+0.305\n회복", ha="center", va="center", fontsize=11,
          color=MUTED, fontweight="bold")
-ax1.axhline(0.922, color=SLATE, lw=1, ls="--", alpha=0.6, zorder=1)
+ax1.axhline(0.906, color=SLATE, lw=1, ls="--", alpha=0.6, zorder=1)
 ax1.set_xticks(list(x)); ax1.set_xticklabels(systems, fontsize=10.5, color=INK)
 ax1.set_ylim(0, 1.02); ax1.set_ylabel("방어 점수", fontsize=11, color=MUTED)
 ax1.set_title("① 방어점수 — RAG 구조개선 효과", fontsize=12.5, fontweight="bold",
@@ -85,7 +85,7 @@ ax2.legend(handles=[Patch(color=TEAL, label="재밍 class"),
 
 fig.suptitle("HVT + RAG 최종 실험결과  ·  18 실공격 시나리오 · 5시드 · 실전탐지(r0.75/fp0.1)",
              fontsize=13.5, fontweight="bold", color=INK, y=1.005)
-fig.text(0.5, -0.03, "개선 RAG v2 평균 0.931  (HVT 0.922 동률) · naive 0.599 대비 +0.332  ·  "
+fig.text(0.5, -0.03, "개선 RAG v2 평균 0.904  (HVT 0.906 동률) · naive 0.599 대비 +0.305  ·  "
          "RAG = attack_class 라우팅 + NIST 봉쇄절차",
          ha="center", fontsize=9.5, color=MUTED)
 plt.tight_layout()

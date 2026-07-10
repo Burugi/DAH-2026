@@ -5,7 +5,7 @@
   - RAG-A(`attack_rag/rag_a.py`)가 관측 → attack_class(감염/비감염/재밍/unknown)를 산출
     (오프라인, `attack_rag/scenario_attack_class.json`로 주입 — 별도 env라 sim 인라인 호출 X).
   - 이 정책이 attack_class를 소비해 '대응 자세'만 라우팅(행동 직접결정 X, Posture Router).
-실측(실전조건 채널①): naive 0.599 → 본 v2 0.931 (HVT 0.922 동률). `attack_rag/docs/` 참조.
+실측(실전조건 채널①): naive 0.599 → 본 v2 0.904 (HVT 0.906 동률). `attack_rag/docs/` 참조.
 
 --- 이하 자세 라우팅 로직 ---
 
