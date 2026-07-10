@@ -32,9 +32,9 @@ cases = [
 ]
 ok = 0
 for label, obs, host in cases:
-    print(f"\n{'='*70}\n{label}", flush=True)
-    time.sleep(PAUSE)                       # 녹화용 호흡 — 구분선 뒤 잠시 멈췄다 케이스 출력
-    print(f"[관측] {obs}")
+    print(f"\n{'='*70}", flush=True)
+    time.sleep(PAUSE)                       # 녹화용 호흡 — 구분선만 찍고 잠시 멈췄다 케이스 시작
+    print(f"{label}\n[관측] {obs}")
     # ① RAG-A: 관측 → 공격타입 (id + confidence + attack_class)
     a = raga.identify(obs, target_host=host, topk=3)
     top = a["result"][0]
