@@ -41,12 +41,15 @@ for label, obs, host in cases:
         "observation": obs, "target": {"type": "hosts", "value": host}}]})
     det = b["results"][0]
     acts = det["recommended_actions"]
-    print(f"  ② RAG-B → 경로={det['path']} 추천 방어 {len(acts)}개:")
+    llm = " (LLM 선택)" if det.get("llm_used") else ""
+    print(f"  ② RAG-B → 경로={det['path']} 추천 방어 {len(acts)}개:{llm}")
     for r in acts[:3]:
         basis = (f"유사도={r['score']}" if r.get("score") is not None
                  else "ATT&CK→D3FEND 공식매핑")
         print(f"       [{r['action_id']}] {r['action_name']} ← {r['d3fend_label']} "
               f"({r['d3fend_tactic']}, {basis})")
+    if acts:
+        print(f"  ③ 근거: {acts[0]['rationale']}")
     if acts:
         ok += 1
     else:
