@@ -1,0 +1,10 @@
+.git
+.claude
+**/__pycache__
+**/.DS_Store
+results/
+appendix/defense_rag/data/*.json
+docs/gifs/
+docs/sample_run/
+docs/example_animation.gif
+*.zip

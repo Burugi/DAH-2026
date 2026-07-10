@@ -74,6 +74,28 @@ pip install -r requirements.txt
 `appendix/`의 RAG 실험은 sentence-transformers 계열의 **별도 env**가 필요하며 sim과 한 프로세스에서
 섞이지 않음. 실행법은 `appendix/attack_rag/README.md` 참고.
 
+### Docker (선택)
+
+위 절차를 이미지 하나로 묶은 `Dockerfile`을 제공함. sim과 RAG의 의존성 충돌 때문에
+이미지 안에 venv 두 개(`/opt/sim`, `/opt/rag`)로 분리돼 있고, 임베딩 모델을 빌드 시
+내려받아 실행 시 네트워크가 필요 없음.
+
+```bash
+docker build -t neuroguard .
+
+# 방어 채점 (기본 모델 = HVT+RAG)
+docker run --rm neuroguard   # = src/score.py --scenario A17 --recall 0.75 --fp 0.1 --seeds 5
+
+# HVT vs HVT+RAG 비교
+docker run --rm --entrypoint bash neuroguard -c 'PATH=/opt/sim/bin:$PATH ./src/compare_hvt_rag.sh'
+
+# RAG 파이프라인 데모 (관측 → 공격판단 → 방어추천, 오프라인)
+docker run --rm -w /app/appendix neuroguard /opt/rag/bin/python -m attack_rag.integration_test
+
+# (선택) LLM 근거 생성 — 키를 넘기면 Claude가 후보 중 선택 + 근거 작성
+docker run --rm -w /app/appendix -e ANTHROPIC_API_KEY neuroguard /opt/rag/bin/python -m attack_rag.integration_test
+```
+
 ## 실행
 
 ```bash
