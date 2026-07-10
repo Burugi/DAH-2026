@@ -130,3 +130,7 @@ HVT 대시보드(A1 공급망 웜) — 함대 맵·점수 곡선·전술 로그.
 
 [아키텍처](docs/architecture.md) · [데모](docs/demo.md) · [시나리오](docs/scenarios.md) ·
 대안 모델 `src/counterpart_models/` · RAG 실험 `appendix/`
+
+## License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
