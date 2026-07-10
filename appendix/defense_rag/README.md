@@ -77,10 +77,12 @@ env `DEFENSE_RAG_LLM_MODEL`로 변경)가 후보 방어 행동 중 하나를 골
 규칙 기반으로 폴백(오프라인 시연 보장). 출력의 `llm_used`로 어느 경로였는지 표시.
 
 ## 남은 일 (합의 필요, PLAN §5-B/C)
-- LLM 훅 **라이브 호출 검증** — 현재 크레덴셜 없어 오프라인만 검증됨
 - D3FEND의 IT 편향으로 드론/GPS/DoS 관측은 벡터 점수가 낮음(0.2~0.46) → 도메인 힌트 보강(옵션)
 
 완료된 항목:
+- ~~LLM 훅 라이브 호출 검증~~ ✅ 2026-07-10 실검증 (claude-sonnet-5) — integration_test
+  3케이스 전부 후보 내 선택 + 한국어 근거 생성 확인. 적대적 패치 케이스에선 규칙 순서
+  (Monitor 우선)를 LLM이 오작동 위험 판단으로 Failsafe 우선으로 재정렬 = 과소대응 교정.
 - ~~B4 통합 테스트~~ ✅ RAG-A 실제 output 연결 완료 — `attack_rag/integration_test.py`
   3/3 통과 (abstain → raw 관측 벡터 폴백 포함)
 - ~~ATLAS 노드 KB 포함 확인~~ ✅ 확인 결과 KB(271기법)·매핑에 ATLAS(AML.*) 없음.

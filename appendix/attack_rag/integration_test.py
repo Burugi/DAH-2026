@@ -8,6 +8,7 @@
   RAG-A가 abstain(신뢰도 미달)이면 technique_id 없이 raw 관측만 넘겨
   RAG-B의 벡터 폴백 경로를 태운다(= 'ATT&CK 매칭 실패 시 raw fallback')."""
 import os, sys
+os.environ.setdefault("TOKENIZERS_PARALLELISM", "false")   # LLM 훅 fork 경고 억제 (데모 화면 청결)
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))  # appendix/ 를 path에
 from attack_rag.rag_a import RagA
 from defense_rag.pipeline import DefenseRAG
