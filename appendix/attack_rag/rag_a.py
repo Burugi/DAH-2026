@@ -23,6 +23,30 @@ _COMP_TAC = {"lateral-movement", "execution", "privilege-escalation",
 import os
 _DATA = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'rag_data')
 _DEFAULT_MODEL = "sentence-transformers/all-MiniLM-L6-v2"
+# LangChain 청킹 (defense_rag와 동일 설정). chunk_size는 임베딩 모델(MiniLM, 256
+# wordpiece ≈ 약 1000자) 윈도에 맞춤 — 잘림 없이 통과하고, 윈도 초과 문서만 분할.
+# 실측(heldout 2000): 400자로 잘게 쪼개면 recall@5 0.533→0.479로 하락, 1000자는 동일.
+CHUNK_SIZE, CHUNK_OVERLAP = 1000, 100
+
+
+def _kb_text(k):
+    return f"{k['name']}. {k['description']} {k.get('detection','')}"
+
+
+def _chunks(text, name):
+    """LangChain 스플리터로 청크 분할. 2번째 청크부터 기법명 접두어로 문맥 유지."""
+    from langchain_text_splitters import RecursiveCharacterTextSplitter
+    sp = RecursiveCharacterTextSplitter(chunk_size=CHUNK_SIZE, chunk_overlap=CHUNK_OVERLAP)
+    return [p if i == 0 else f"{name}: {p}" for i, p in enumerate(sp.split_text(text))]
+
+
+def kb_chunks(kb, ids):
+    """KB 전체 → (청크 텍스트 리스트, 청크→KB문서 인덱스). build_index.py와 공유."""
+    texts, doc_idx = [], []
+    for j, i in enumerate(ids):
+        for c in _chunks(_kb_text(kb[i]), kb[i]['name']):
+            texts.append(c); doc_idx.append(j)
+    return texts, np.array(doc_idx, dtype=np.int32)
 
 
 class RagA:
@@ -35,9 +59,12 @@ class RagA:
         if model == _DEFAULT_MODEL and os.path.exists(idx):
             d = np.load(idx, allow_pickle=True)      # ★미리 계산된 KB 인덱스 로드(빠름)
             self.E, self.xwE = d['E'], d['xwE']
-        else:                                        # 다른 모델(BGE-M3 등)이면 즉석 임베딩
-            corpus = [f"{self.kb[i]['name']}. {self.kb[i]['description']} {self.kb[i].get('detection','')}" for i in self.ids]
-            self.E = self.m.encode(corpus, normalize_embeddings=True, batch_size=64)
+            # 청크→문서 매핑. 구버전(청킹 전) npz면 1청크=1문서로 간주
+            self.doc_idx = (d['doc_idx'] if 'doc_idx' in d.files
+                            else np.arange(len(self.ids), dtype=np.int32))
+        else:                                        # 다른 모델(BGE-M3 등)이면 즉석 청킹+임베딩
+            texts, self.doc_idx = kb_chunks(self.kb, self.ids)
+            self.E = self.m.encode(texts, normalize_embeddings=True, batch_size=64)
             self.xwE = self.m.encode([x['itext'] for x in self.xw], normalize_embeddings=True)
 
     def _classify(self, tech, matched):
@@ -70,7 +97,10 @@ class RagA:
         matched = self.xw[best] if xw_sim[best] > 0.35 else None
         qtext = obs_text + " " + matched['itext'] if matched else obs_text
         qe = self.m.encode([qtext], normalize_embeddings=True)
-        sim = (qe @ self.E.T).ravel(); top = sim.argsort()[::-1][:topk]
+        chunk_sim = (qe @ self.E.T).ravel()
+        sim = np.full(len(self.ids), -1.0, dtype=np.float32)
+        np.maximum.at(sim, self.doc_idx, chunk_sim)          # 청크 유사도 → 문서 단위 max 집계
+        top = sim.argsort()[::-1][:topk]
         out = []
         for j in top:
             k = self.kb[self.ids[j]]

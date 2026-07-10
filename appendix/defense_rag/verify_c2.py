@@ -23,10 +23,21 @@ from .lookup import AttackLookup
 from .pipeline import DefenseRAG
 
 
+def _scenario_dir():
+    """시나리오 yaml 위치: src/defense_rag(구) 또는 appendix/defense_rag(현) 둘 다 지원."""
+    parent = os.path.dirname(config.HERE)                       # src/ 또는 appendix/
+    root = os.path.dirname(parent)                              # repo root
+    for d in (os.path.join(parent, "scenarios"),                # src/scenarios (구 레이아웃)
+              os.path.join(root, "src", "scenarios")):          # appendix → ../src/scenarios
+        if glob.glob(os.path.join(d, "A*.yaml")):
+            return d
+    raise SystemExit(f"시나리오 yaml을 찾을 수 없음 (탐색: {parent}/scenarios, {root}/src/scenarios)")
+
+
 def _scenarios():
     """{T-code -> 그 코드를 쓰는 시나리오 설명들} 과 전체 T-code 목록."""
     descs = collections.defaultdict(list)
-    here = os.path.join(os.path.dirname(config.HERE), "scenarios")
+    here = _scenario_dir()
     for f in sorted(glob.glob(os.path.join(here, "A*.yaml"))):
         y = yaml.safe_load(open(f))
         d = (y.get("description") or "").replace("\n", " ").strip()

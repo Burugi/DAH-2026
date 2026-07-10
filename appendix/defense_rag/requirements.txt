@@ -2,5 +2,6 @@
 # ⚠️ CybORG sim 환경(numpy==1.23 고정, py3.11)과 별도 env에 설치할 것 —
 #    sentence-transformers가 torch/numpy를 끌어와 sim 환경과 충돌할 수 있음.
 sentence-transformers>=2.2   # 로컬 임베딩(all-MiniLM-L6-v2). 최초 1회 모델 자동 다운로드
+langchain-text-splitters     # KB 문서 청킹(RecursiveCharacterTextSplitter) — 인덱스 빌드 시에만 필요
 pyyaml                       # verify_c2.py 시나리오 파싱
 # anthropic                  # (선택) LLM 근거 훅. 없으면 규칙 기반 폴백으로 동작
