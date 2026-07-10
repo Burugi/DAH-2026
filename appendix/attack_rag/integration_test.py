@@ -48,7 +48,10 @@ for label, obs, host in cases:
     det = b["results"][0]
     acts = det["recommended_actions"]
     llm = " (LLM 선택)" if det.get("llm_used") else ""
-    print(f"  ② RAG-B → 경로={det['path']} 추천 방어 {len(acts)}개:{llm}")
+    # direct_mapping이면 실제 매칭된 id 표시 (top-k 중 공식매핑 있는 첫 후보로 폴백될 수 있음)
+    matched = det["technique_id"] if isinstance(det["technique_id"], str) else None
+    path = det["path"] + (f"({matched})" if matched else "")
+    print(f"  ② RAG-B → 경로={path} 추천 방어 {len(acts)}개:{llm}")
     for r in acts[:3]:
         basis = (f"유사도={r['score']}" if r.get("score") is not None
                  else "ATT&CK→D3FEND 공식매핑")
